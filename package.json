@@ -1,0 +1,33 @@
+{
+  "name": "challenge-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build && wrangler dev",
+    "check": "tsc -p tsconfig.client.json && tsc -p tsconfig.worker.json && eslint .",
+    "test": "vitest run",
+    "build": "vite build && wrangler deploy --dry-run --env staging --outdir dist/worker-staging && wrangler deploy --dry-run --env production --outdir dist/worker-production",
+    "deploy:staging": "node scripts/deploy.mjs staging",
+    "deploy:production": "node scripts/deploy.mjs production"
+  },
+  "dependencies": {
+    "hono": "^4.13.13",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.23.0",
+    "@cloudflare/workers-types": "^5.20261019.1",
+    "@eslint/js": "^10.0.1",
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^22.20.5",
+    "eslint": "^10.13.0",
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.72.0",
+    "vite": "^8.3.4",
+    "vitest": "~4.1",
+    "wrangler": "^4.151.3"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

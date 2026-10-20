@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Top level is local dev and tests. Deploys always pass --env.
+  "name": "challenge-app",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "observability": { "enabled": true },
+  "vars": { "APP_ENV": "local" },
+  "env": {
+    "staging": {
+      "name": "challenge-app-staging",
+      "workers_dev": true,
+      "vars": { "APP_ENV": "staging" }
+    },
+    "production": {
+      "name": "challenge-app-production",
+      "workers_dev": true,
+      "vars": { "APP_ENV": "production" }
+    }
+  }
+}

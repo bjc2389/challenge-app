@@ -1,0 +1,29 @@
+:root {
+  --orange: #fa4616;
+  --blue: #0021a5;
+  --navy: #002657;
+  --white: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--white);
+  color: var(--navy);
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+h1 {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 900;
+  color: var(--orange);
+}
+
+main {
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
