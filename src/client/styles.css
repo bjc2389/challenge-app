@@ -27,3 +27,52 @@ main {
   margin: 0 auto;
   padding: 1.5rem 1rem;
 }
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+label {
+  font-weight: 600;
+}
+
+input,
+button {
+  min-height: 48px;
+  font: inherit;
+  border-radius: 0.5rem;
+}
+
+input {
+  padding: 0 0.75rem;
+  border: 2px solid var(--navy);
+  color: var(--navy);
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 2px;
+}
+
+button {
+  padding: 0 1.25rem;
+  border: none;
+  background: var(--blue);
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.error {
+  margin: 0;
+  color: var(--navy);
+  font-weight: 600;
+}

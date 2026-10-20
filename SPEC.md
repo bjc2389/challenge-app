@@ -30,10 +30,17 @@
 ## 3. Auth
 
 - **Player login:** `POST /api/login` compares the submitted password to `PLAYER_PASSWORD` using a constant-time comparison.
-  - On success, it sets a cookie named `session`: HttpOnly, Secure, SameSite=Lax, lasting 30 days. The cookie holds `{role, exp}`, signed with HMAC-SHA256 using `SESSION_SECRET`.
+  - On success, it sets a cookie named `session`: HttpOnly, Secure, SameSite=Lax, Path=/, lasting 30 days. The cookie holds `{role, exp}`, signed with HMAC-SHA256 using `SESSION_SECRET`.
+    - Format: `base64url(JSON {role, exp})` + `.` + `base64url(HMAC of the first part)`, with `exp` in UTC epoch milliseconds.
+    - Expiry is fixed at login and never extended by activity.
   - On failure, it returns 401 after a delay of about one second.
-- **Admin login:** `POST /api/admin/login` checks `ADMIN_PASSWORD` and sets an admin session lasting 12 hours. An admin session also grants player access.
-- **What's protected:** every `/api/*` route requires a session, except `/api/login`, `/api/admin/login` and `/api/health`. Static files and the app shell are public because they contain no data. The client sends the user to `/login` whenever the API returns 401.
+- **Admin login:** `POST /api/admin/login` checks `ADMIN_PASSWORD` and sets an admin session lasting 12 hours, with the same failure delay. An admin session also grants player access. Admin and player sessions share the one cookie, so when an admin session expires the user is logged out entirely.
+- **Logout:** `POST /api/logout` always clears the cookie, with or without a session. Sessions are stateless, so a copied cookie stays valid until it expires; changing `SESSION_SECRET` is the way to end every session.
+- **What's protected:** every `/api/*` route requires a session, except `POST /api/login`, `POST /api/logout`, `POST /api/admin/login` and `GET /api/health`.
+  - No valid session returns 401. A player session on `/api/admin` or `/api/admin/*` returns 403.
+  - Static files and the app shell are public because they contain no data.
+  - The client sends the user to `/login?next=<path>` whenever the API returns 401, and back to that same-origin path after logging in.
+- **Secrets:** an unset or empty secret, or a `SESSION_SECRET` shorter than 32 characters, counts as missing. The affected login and protected routes then return 500, and only the variable's name is logged.
 - `/admin` is not linked anywhere in the UI.
 - Changing `SESSION_SECRET` logs everyone out.
 
@@ -185,6 +192,7 @@ Deleting a game deletes all of its child rows in one batch.
   - `POST /api/admin/login`
   - `GET /api/health`, which returns `{ok, env}`
 - **Player:**
+  - `GET /api/session`, which returns `{role, exp}` for the current session
   - `POST /api/games`
   - `GET /api/games/:code`
   - `POST /api/games/:code/roll`
@@ -206,6 +214,7 @@ Deleting a game deletes all of its child rows in one batch.
   - 404: not found
   - 409: invalid state change
   - 422: validation error
+  - 500: server error, including a missing secret (`{error: "internal", message: "Something went wrong"}`, never with details)
 
 ## 11. Not in the MVP
 
