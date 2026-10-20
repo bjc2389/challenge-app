@@ -151,3 +151,82 @@ describe("§3 §10 role checks (403)", () => {
     await expectError(res, 404, "not_found", "Not found");
   });
 });
+
+describe("§3 path tricks don't bypass the admin check", () => {
+  it.each([
+    ["a percent-encoded admin path", "/api/%61dmin/games", 403],
+    ["a mixed-case admin path (no such route)", "/api/Admin/games", 404],
+    ["a doubled slash (no such route)", "/api//admin/games", 404],
+  ])("a player on %s gets %i", async (_name, path, status) => {
+    const res = await testApp().request(path, withCookie(await cookieFor("player")));
+    expect(res.status).toBe(status);
+  });
+
+  it("a forged admin cookie sent after a valid player one never grants admin", async () => {
+    const valid = await cookieFor("player");
+    const forged = await signSession({ role: "admin", exp: NOW + 60_000 }, ROTATED_AWAY_SECRET);
+    const res = await testApp().request("/api/admin/games", withCookie(`${valid}; session=${forged}`));
+    await expectError(res, 403, "forbidden", "Admin access required");
+  });
+
+  it("a forged admin cookie sent first is rejected outright", async () => {
+    const valid = await cookieFor("player");
+    const forged = await signSession({ role: "admin", exp: NOW + 60_000 }, ROTATED_AWAY_SECRET);
+    const res = await testApp().request("/api/admin/games", withCookie(`session=${forged}; ${valid}`));
+    await expectError(res, 401, "unauthorized", "Log in to continue");
+  });
+});
+
+describe("§3 HEAD and OPTIONS", () => {
+  it("HEAD /api/health is public like GET", async () => {
+    expect((await anon("HEAD", "/api/health")).status).toBe(200);
+  });
+
+  it.each([
+    ["HEAD", "/api/session"],
+    ["OPTIONS", "/api/session"],
+    ["OPTIONS", "/api/login"],
+  ])("%s %s without a session gets 401", async (method, path) => {
+    expect((await anon(method, path)).status).toBe(401);
+  });
+});
+
+describe("§3 cross-origin state changes get 403", () => {
+  const SAME_ORIGIN = "http://localhost";
+
+  it.each([
+    ["an Origin from another site", { origin: "https://evil.example" }],
+    ["Origin null", { origin: "null" }],
+    ["Sec-Fetch-Site cross-site", { "sec-fetch-site": "cross-site" }],
+    ["Sec-Fetch-Site same-site", { "sec-fetch-site": "same-site" }],
+  ])("POST /api/logout with %s", async (_name, headers) => {
+    const res = await testApp().request("/api/logout", withCookie(await cookieFor("player"), { method: "POST", headers }));
+    await expectError(res, 403, "forbidden", "Cross-origin request blocked");
+    expect(res.headers.getSetCookie()).toEqual([]);
+  });
+
+  it("POST /api/login from another origin is blocked before the password is checked", async () => {
+    const res = await testApp().request("http://localhost/api/login", {
+      method: "POST",
+      headers: { "content-type": "text/plain", origin: "https://evil.example" },
+      body: JSON.stringify({ password: "fake-wrong-password" }),
+    });
+    await expectError(res, 403, "forbidden", "Cross-origin request blocked");
+  });
+
+  it.each([
+    ["a same-origin Origin", { origin: SAME_ORIGIN, "sec-fetch-site": "same-origin" }],
+    ["no Origin or Sec-Fetch-Site (non-browser client)", {}],
+  ])("POST /api/logout with %s is allowed", async (_name, headers) => {
+    const res = await testApp().request(`${SAME_ORIGIN}/api/logout`, { method: "POST", headers });
+    expect(res.status).toBe(200);
+  });
+
+  it("GET requests are not origin-checked", async () => {
+    const res = await testApp().request(
+      "/api/session",
+      withCookie(await cookieFor("player"), { headers: { "sec-fetch-site": "cross-site" } }),
+    );
+    expect(res.status).toBe(200);
+  });
+});

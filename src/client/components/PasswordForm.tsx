@@ -19,11 +19,12 @@ export function PasswordForm({ endpoint, onSuccess }: Props) {
     setError(null);
     try {
       await apiFetch(endpoint, { method: "POST", body: JSON.stringify({ password }) }, { redirectOn401: false });
-      onSuccess();
     } catch (err) {
       setError(err instanceof ApiError && err.status === 401 ? MSG_BAD_LOGIN : MSG_FAILED);
       setPending(false);
+      return;
     }
+    onSuccess();
   };
 
   return (

@@ -14,9 +14,28 @@ export const PUBLIC_ROUTES: readonly string[] = [
 
 const isAdminPath = (path: string) => path === "/api/admin" || path.startsWith("/api/admin/");
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+// Blocks state-changing requests that a browser marks as coming from another
+// origin, such as a form on another site posting to /api/logout. Requests with
+// neither header (curl, tests) are allowed: browsers always send Origin on a
+// cross-origin POST.
+export const rejectCrossOrigin: MiddlewareHandler<AppEnv> = async (c, next) => {
+  if (!SAFE_METHODS.has(c.req.method)) {
+    const fetchSite = c.req.header("sec-fetch-site");
+    const origin = c.req.header("origin");
+    const crossSite = fetchSite !== undefined && fetchSite !== "same-origin" && fetchSite !== "none";
+    const crossOrigin = origin !== undefined && origin !== new URL(c.req.url).origin;
+    if (crossSite || crossOrigin) return apiError(c, 403, "forbidden", "Cross-origin request blocked");
+  }
+  return next();
+};
+
 export function requireSession(deps: Deps): MiddlewareHandler<AppEnv> {
   return async (c, next) => {
-    if (PUBLIC_ROUTES.includes(`${c.req.method} ${c.req.path}`)) return next();
+    // Hono answers HEAD with the GET handler, so HEAD follows the GET rule.
+    const method = c.req.method === "HEAD" ? "GET" : c.req.method;
+    if (PUBLIC_ROUTES.includes(`${method} ${c.req.path}`)) return next();
 
     const secret = requireSecret(c.env, "SESSION_SECRET");
     const session = await readSession(c, secret, deps.now());

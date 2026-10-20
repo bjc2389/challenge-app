@@ -39,10 +39,10 @@
 - **What's protected:** every `/api/*` route requires a session, except `POST /api/login`, `POST /api/logout`, `POST /api/admin/login` and `GET /api/health`.
   - No valid session returns 401. A player session on `/api/admin` or `/api/admin/*` returns 403.
   - Static files and the app shell are public because they contain no data.
-  - The client sends the user to `/login?next=<path>` whenever the API returns 401, and back to that same-origin path after logging in.
+  - The client sends the user to `/login?next=<path>` whenever the API returns 401, except on `/login` and `/admin`, which show their own password form. After logging in it returns to that path if it is same-origin and not `/login` or `/admin`.
+  - State-changing requests (anything but GET, HEAD and OPTIONS) whose `Origin` or `Sec-Fetch-Site` header shows another origin get 403.
 - **Secrets:** an unset or empty secret, or a `SESSION_SECRET` shorter than 32 characters, counts as missing. The affected login and protected routes then return 500, and only the variable's name is logged.
 - `/admin` is not linked anywhere in the UI.
-- Changing `SESSION_SECRET` logs everyone out.
 
 ## 4. Game lifecycle
 

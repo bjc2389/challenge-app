@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "./env";
-import { requireSession } from "./auth/middleware";
+import { rejectCrossOrigin, requireSession } from "./auth/middleware";
 import { LOGIN_FAILURE_DELAY_MS, authRoutes } from "./auth/routes";
 import type { Session } from "./auth/session";
 import { handleError, handleNotFound } from "./errors";
@@ -20,6 +20,7 @@ export const defaultDeps: Deps = {
 export function createApp(deps: Deps = defaultDeps) {
   const app = new Hono<AppEnv>().basePath("/api");
 
+  app.use("*", rejectCrossOrigin);
   app.use("*", requireSession(deps));
   app.get("/health", (c) => c.json({ ok: true, env: c.env.APP_ENV }));
   app.route("/", authRoutes(deps));

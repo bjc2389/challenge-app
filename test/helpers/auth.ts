@@ -28,7 +28,9 @@ export const SESSION_SECRET = env.SESSION_SECRET as string;
 /** Fixed test clock: 2026-10-20T12:00:00Z in UTC epoch ms. */
 export const NOW = Date.UTC(2026, 9, 20, 12, 0, 0);
 
-export type Deps = { now(): number; delay(ms: number): Promise<void> };
+import type { Deps } from "../../src/worker/app";
+
+export type { Deps };
 
 /**
  * Injected clock and delay. `delays` records every requested delay.

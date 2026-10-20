@@ -15,10 +15,9 @@ type Options = { redirectOn401?: boolean };
 // Every API call goes through here. A 401 sends the user to /login and brings
 // them back afterwards, unless the caller handles it (the login forms do).
 export async function apiFetch<T>(path: string, init?: RequestInit, { redirectOn401 = true }: Options = {}): Promise<T> {
-  const res = await fetch(path, {
-    ...init,
-    headers: { "content-type": "application/json", ...init?.headers },
-  });
+  const headers = new Headers(init?.headers);
+  if (!headers.has("content-type")) headers.set("content-type", "application/json");
+  const res = await fetch(path, { ...init, headers });
   if (res.ok) return (await res.json()) as T;
 
   const body = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
