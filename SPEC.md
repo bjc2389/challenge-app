@@ -25,7 +25,7 @@
 - Deploy command: `npm run deploy:<env>`. In order, it applies D1 migrations to the remote database, runs the catalog sync SQL there, then runs `wrangler deploy --env <env>`.
 - Non-production branch builds are off.
 
-**GitHub Actions** runs a job named `ci` on every pull request to `staging` or `main`: install, check, test, build. Rulesets on both branches require `ci` to pass.
+**GitHub Actions** runs a job named `ci` on every pull request to `staging` or `main`: install, check, test, build, and a `wrangler deploy --dry-run` of both environments (`npm run verify:deploy`). Rulesets on both branches require `ci` to pass.
 
 ## 3. Auth
 

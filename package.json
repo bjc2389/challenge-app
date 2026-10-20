@@ -6,7 +6,8 @@
     "dev": "vite build && wrangler dev",
     "check": "tsc -p tsconfig.client.json && tsc -p tsconfig.worker.json && eslint .",
     "test": "vitest run",
-    "build": "vite build && wrangler deploy --dry-run --env staging --outdir dist/worker-staging && wrangler deploy --dry-run --env production --outdir dist/worker-production",
+    "build": "vite build",
+    "verify:deploy": "wrangler deploy --dry-run --env staging --outdir dist/worker-staging && wrangler deploy --dry-run --env production --outdir dist/worker-production",
     "deploy:staging": "node scripts/deploy.mjs staging",
     "deploy:production": "node scripts/deploy.mjs production"
   },

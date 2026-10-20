@@ -20,3 +20,6 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
+      # Validates both deploy configs. Kept out of `build` because Cloudflare builds
+      # flag a dry run of the other environment as a Worker name mismatch.
+      - run: npm run verify:deploy

@@ -16,11 +16,13 @@
     "staging": {
       "name": "challenge-app-staging",
       "workers_dev": true,
+      "preview_urls": false,
       "vars": { "APP_ENV": "staging" }
     },
     "production": {
       "name": "challenge-app-production",
       "workers_dev": true,
+      "preview_urls": false,
       "vars": { "APP_ENV": "production" }
     }
   }
