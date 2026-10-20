@@ -8,7 +8,7 @@ export function App() {
 
   useEffect(() => {
     fetch("/api/health")
-      .then((res) => (res.ok ? (res.json() as Promise<Health>) : Promise.reject()))
+      .then((res) => (res.ok ? (res.json() as Promise<Health>) : Promise.reject(new Error(`HTTP ${res.status}`))))
       .then(setHealth)
       .catch(() => setFailed(true));
   }, []);

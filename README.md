@@ -1,6 +1,6 @@
 # Challenge App
 
-A two-team party race game. See [SPEC.md](SPEC.md) for what it does and [claude.md](claude.md) for how the repo is run.
+A two-team party race game. See [SPEC.md](SPEC.md) for what it does and [CLAUDE.md](CLAUDE.md) for how the repo is run.
 
 ## Local development
 
