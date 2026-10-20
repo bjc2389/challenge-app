@@ -4,5 +4,10 @@ dist/
 .dev.vars
 .dev.vars.*
 !.dev.vars.example
-.env*
+.env
+.env.*
+!.env.example
 *.log
+
+# Personal Claude Code overrides
+.claude/settings.local.json
