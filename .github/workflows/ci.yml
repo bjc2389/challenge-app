@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  pull_request:
+    branches: [staging, main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm test
+      - run: npm run build
+      # Validates both deploy configs. Kept out of `build` because Cloudflare builds
+      # flag a dry run of the other environment as a Worker name mismatch.
+      - run: npm run verify:deploy
+      # Runs the real migrations and catalog sync SQL against a local D1, twice,
+      # to prove both apply cleanly and the second run changes nothing.
+      - run: npm run db:local
+      - run: npm run db:local

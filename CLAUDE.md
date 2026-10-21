@@ -14,8 +14,10 @@ This is a two-team party race game for a small group of friends. **SPEC.md is th
 - `npm run dev`: run the app locally
 - `npm run check`: typecheck and lint
 - `npm test`
-- `npm run build`
-- `npm run catalog:sql`: generate the catalog sync SQL
+- `npm run build`: build the client
+- `npm run verify:deploy`: dry-run both deploy configs (CI runs this; it needs no credentials)
+- `npm run catalog:sql`: validate the catalog and generate the sync SQL (`dist/catalog.sql`)
+- `npm run db:local`: apply migrations and the catalog sync to the local D1 (safe to repeat)
 - `npm run deploy:staging` and `npm run deploy:production`: only Cloudflare builds run these. Never run them yourself.
 
 ## Layout
