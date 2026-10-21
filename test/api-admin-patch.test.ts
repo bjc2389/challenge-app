@@ -34,6 +34,7 @@ import {
 import {
   HOUR,
   MIN,
+  expiredGame,
   finishedGame,
   getDetail,
   getList,
@@ -289,5 +290,32 @@ describe("§3 cross-origin PATCH /api/admin/games/:code gets 403", () => {
     const res = await adm.patch(adminGameUrl(g.code), { isTest: true }, headers);
     await expectError(res, 403, "forbidden", "Cross-origin request blocked");
     expect(await gameRow(g.code)).toEqual(before);
+  });
+});
+
+describe("§4 PATCH /api/admin/games/:code finalizes an expired game first", () => {
+  it("returns the timeout result, and only the timeout bumps version", async () => {
+    const g = await expiredGame(api, clock, { at: T0, steps: [{ slot: 2, task: 0, min: 5 }] });
+    const v0 = (await gameRow(g.code)).version;
+    clock.setNow(g.endsAt + MIN);
+    const item = await setTest(adm, g.code, true);
+    expect(item).toMatchObject({
+      code: g.code,
+      isTest: true,
+      status: "finished",
+      endReason: "timeout",
+      endedAt: g.endsAt,
+      winnerTeamId: g.teamIds[1],
+      elapsedMs: HOUR,
+    });
+    expect(await gameRow(g.code)).toMatchObject({ status: "finished", is_test: 1, version: v0 + 1 });
+  });
+
+  it("a game one millisecond before its deadline stays active", async () => {
+    const g = await expiredGame(api, clock, { at: T0 });
+    const v0 = (await gameRow(g.code)).version;
+    clock.setNow(g.endsAt - 1);
+    expect(await setTest(adm, g.code, true)).toMatchObject({ status: "active", endedAt: null });
+    expect((await gameRow(g.code)).version).toBe(v0);
   });
 });

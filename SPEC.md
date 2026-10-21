@@ -208,7 +208,7 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 - **`/admin`:**
   - Admin login.
   - A games table showing every game, test and in-progress games included, newest created first: code (linking to the game), created date, status, teams, result and test flag. Each game can be marked or unmarked as a test, or deleted (with confirmation; this is a permanent delete). Deleting a game in progress is allowed, and the confirmation warns that anyone playing it will lose it.
-  - A read-only view of the catalog, inactive categories and tasks included and shown muted, with tasks ordered by id.
+  - A read-only view of the catalog, inactive categories and tasks included and shown muted. Active categories come first, each group in catalog order; tasks are ordered by id.
 
 ## 10. API
 

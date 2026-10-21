@@ -2,7 +2,7 @@
 import { Hono, type Context } from "hono";
 import type { AppEnv, Deps } from "../app";
 import { deleteGame, readAdminGames, readFullCatalog, setTestFlag } from "../db/admin";
-import { sweepExpiredGames } from "../db/games";
+import { finalizeIfExpired, loadSnapshot, sweepExpiredGames } from "../db/games";
 import { apiError } from "../errors";
 import { normalizeCode } from "../game/code";
 import { toAdminCatalog, toAdminGame, toAdminGameList } from "./adminView";
@@ -43,6 +43,12 @@ export function adminRoutes(deps: Deps) {
         if (!code) return notFound(c);
         const isTest = parseTestFlag(await readJson(c));
         if (isTest === null) return apiError(c, 422, "validation", "Send JSON with isTest true or false");
+        // SPEC.md §4: touching a game past its deadline finalizes it, so the reply
+        // never shows an expired game as still active. If that loses a race, the next
+        // list sweep finalizes it.
+        const snap = await loadSnapshot(c.env.DB, code);
+        if (!snap) return notFound(c);
+        await finalizeIfExpired(c.env.DB, snap, deps.now());
         if (!(await setTestFlag(c.env.DB, code, isTest))) return notFound(c);
         const [game] = await readAdminGames(c.env.DB, code);
         return game ? c.json(toAdminGame(game)) : notFound(c);

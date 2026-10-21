@@ -1,6 +1,14 @@
 import { useEffect, useState } from "preact/hooks";
 import { ApiError, apiFetch } from "../api";
-import { adminErrorMessage, catalogSummary, deleteConfirm, gameRow, removeGame, replaceGame, testToggleLabel } from "../admin/view";
+import {
+  adminErrorMessage,
+  catalogSummary,
+  deleteConfirm,
+  gameRow,
+  removeGame,
+  replaceGame,
+  testToggleLabel,
+} from "../admin/view";
 import type { AdminCatalog, AdminGame, AdminGameList } from "../admin/types";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Link } from "../components/Link";
@@ -33,26 +41,48 @@ export function Admin() {
       {isAdmin === null ? null : isAdmin ? (
         <AdminConsole onLoggedOut={() => setIsAdmin(false)} onLogout={logout} />
       ) : (
-        <PasswordForm endpoint="/api/admin/login" onSuccess={() => setIsAdmin(true)} />
+        <PasswordForm
+          endpoint="/api/admin/login"
+          onSuccess={() => setIsAdmin(true)}
+        />
       )}
     </main>
   );
 }
 
-function AdminConsole({ onLoggedOut, onLogout }: { onLoggedOut(): void; onLogout(): void }) {
+function AdminConsole({
+  onLoggedOut,
+  onLogout,
+}: {
+  onLoggedOut(): void;
+  onLogout(): void;
+}) {
   const [games, setGames] = useState<AdminGame[] | null>(null);
   const [catalog, setCatalog] = useState<AdminCatalog | null>(null);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  // Codes with a request in flight; one game's reply never re-enables another's buttons.
+  const [busy, setBusy] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AdminGame | null>(null);
 
   const fail = (err: unknown) => {
     // The admin session ran out (12 hours) or isn't admin: back to the form.
-    if (err instanceof ApiError && (err.status === 401 || err.status === 403)) return onLoggedOut();
+    if (err instanceof ApiError && (err.status === 401 || err.status === 403))
+      return onLoggedOut();
     setError(adminErrorMessage(err));
   };
 
-  useEffect(() => {
+  const setBusyFor = (code: string, on: boolean) =>
+    setBusy((codes) => {
+      const next = new Set(codes);
+      if (on) next.add(code);
+      else next.delete(code);
+      return next;
+    });
+
+  const load = () => {
+    setLoadFailed(false);
+    setError(null);
     Promise.all([
       apiFetch<AdminGameList>("/api/admin/games", undefined, QUIET),
       apiFetch<AdminCatalog>("/api/admin/catalog", undefined, QUIET),
@@ -61,11 +91,16 @@ function AdminConsole({ onLoggedOut, onLogout }: { onLoggedOut(): void; onLogout
         setGames(list.items);
         setCatalog(cat);
       })
-      .catch(fail);
-  }, []);
+      .catch((err) => {
+        setLoadFailed(true);
+        fail(err);
+      });
+  };
+
+  useEffect(load, []);
 
   const toggleTest = async (game: AdminGame) => {
-    setBusy(game.code);
+    setBusyFor(game.code, true);
     setError(null);
     try {
       const updated = await apiFetch<AdminGame>(
@@ -75,25 +110,31 @@ function AdminConsole({ onLoggedOut, onLogout }: { onLoggedOut(): void; onLogout
       );
       setGames((list) => (list ? replaceGame(list, updated) : list));
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404) setGames((list) => (list ? removeGame(list, game.code) : list));
+      if (err instanceof ApiError && err.status === 404)
+        setGames((list) => (list ? removeGame(list, game.code) : list));
       fail(err);
     } finally {
-      setBusy(null);
+      setBusyFor(game.code, false);
     }
   };
 
   const remove = async (game: AdminGame) => {
     setConfirmDelete(null);
-    setBusy(game.code);
+    setBusyFor(game.code, true);
     setError(null);
     try {
-      await apiFetch(`/api/admin/games/${game.code}`, { method: "DELETE" }, QUIET);
+      await apiFetch(
+        `/api/admin/games/${game.code}`,
+        { method: "DELETE" },
+        QUIET,
+      );
       setGames((list) => (list ? removeGame(list, game.code) : list));
     } catch (err) {
-      if (err instanceof ApiError && err.status === 404) setGames((list) => (list ? removeGame(list, game.code) : list));
+      if (err instanceof ApiError && err.status === 404)
+        setGames((list) => (list ? removeGame(list, game.code) : list));
       fail(err);
     } finally {
-      setBusy(null);
+      setBusyFor(game.code, false);
     }
   };
 
@@ -109,7 +150,11 @@ function AdminConsole({ onLoggedOut, onLogout }: { onLoggedOut(): void; onLogout
 
       <section class="stack" aria-labelledby="games-title">
         <h2 id="games-title">Games</h2>
-        {games === null ? (
+        {games === null && loadFailed ? (
+          <button type="button" class="secondary" onClick={load}>
+            Try again
+          </button>
+        ) : games === null ? (
           <p aria-live="polite">Loading…</p>
         ) : games.length === 0 ? (
           <p>No games yet.</p>
@@ -131,10 +176,20 @@ function AdminConsole({ onLoggedOut, onLogout }: { onLoggedOut(): void; onLogout
                   <span class="admin-teams">{row.teams}</span>
                   <span class="admin-meta">{row.result}</span>
                   <div class="admin-actions">
-                    <button type="button" class="secondary" disabled={busy === game.code} onClick={() => toggleTest(game)}>
+                    <button
+                      type="button"
+                      class="secondary"
+                      disabled={busy.has(game.code)}
+                      onClick={() => toggleTest(game)}
+                    >
                       {testToggleLabel(game)}
                     </button>
-                    <button type="button" class="danger" disabled={busy === game.code} onClick={() => setConfirmDelete(game)}>
+                    <button
+                      type="button"
+                      class="danger"
+                      disabled={busy.has(game.code)}
+                      onClick={() => setConfirmDelete(game)}
+                    >
                       Delete
                     </button>
                   </div>
@@ -147,9 +202,14 @@ function AdminConsole({ onLoggedOut, onLogout }: { onLoggedOut(): void; onLogout
 
       <section class="stack" aria-labelledby="catalog-title">
         <h2 id="catalog-title">Catalog</h2>
-        <p class="quiet-note">Read-only. Edit catalog/catalog.json in the repo to change it.</p>
+        <p class="quiet-note">
+          Read-only. Edit catalog/catalog.json in the repo to change it.
+        </p>
         {catalog?.categories.map((cat) => (
-          <div class={`catalog-cat${cat.active ? "" : " inactive"}`} key={cat.id}>
+          <div
+            class={`catalog-cat${cat.active ? "" : " inactive"}`}
+            key={cat.id}
+          >
             <h3>{cat.name}</h3>
             <p class="admin-meta">{catalogSummary(cat)}</p>
             <ul>
