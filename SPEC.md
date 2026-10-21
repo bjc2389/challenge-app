@@ -84,7 +84,7 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 
 - Each category's `countPerGame` sets how many tasks it contributes.
 - The roll picks that many distinct active tasks at random, using crypto randomness, category by category in order. The final category always comes last. Tasks within a category come in random order.
-- The catalog is read from D1 at roll time. If an active category has fewer active tasks than its `countPerGame`, the roll fails with 409 `catalog_incomplete`, naming the category, and the game stays in `setup`.
+- The catalog is read from D1 at roll time. If an active category has fewer active tasks than its `countPerGame`, or there isn't exactly one active final category with `countPerGame` 1, the roll fails with 409 `catalog_incomplete` (naming the short category when there is one), and the game stays in `setup`.
 - Task text is copied into the game when rolled, so later catalog edits never change existing games.
 - Both teams get the same list.
 

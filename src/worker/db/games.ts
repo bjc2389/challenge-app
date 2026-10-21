@@ -116,14 +116,22 @@ const FROM_STATUS: Record<Change["kind"], GameStatus[]> = {
 
 /**
  * Commits one change as a single D1 batch (one transaction). Every statement only
- * takes effect while games.version still equals `expectedVersion`; the last one
- * bumps the version. Returns false, having written nothing, if another write got
+ * takes effect while the game still has `expectedVersion`, an allowed status and
+ * (for player actions) time left; the last one bumps the version. Returns false, having written nothing, if another write got
  * there first. Throws, with nothing written, if any statement fails.
  */
 export async function commitChange(db: D1Database, gameId: number, expectedVersion: number, change: Change) {
-  const guard = "EXISTS (SELECT 1 FROM games WHERE id = ? AND version = ?)";
+  // Every statement carries the same condition as the final games UPDATE: version,
+  // allowed status, and (for player actions) the deadline. So either all of them
+  // apply or none do. The timeout itself has no `at` and is exempt from the deadline.
+  const from = FROM_STATUS[change.kind];
+  const deadline = "at" in change ? [change.at] : [];
+  const condition =
+    `id = ? AND version = ? AND status IN (${from.map(() => "?").join(", ")})` +
+    (deadline.length > 0 ? " AND (ends_at IS NULL OR ends_at > ?)" : "");
+  const conditionParams = [gameId, expectedVersion, ...from, ...deadline];
   const guarded = (sql: string, ...params: unknown[]) =>
-    db.prepare(`${sql} AND ${guard}`).bind(...params, gameId, expectedVersion);
+    db.prepare(`${sql} AND EXISTS (SELECT 1 FROM games WHERE ${condition})`).bind(...params, ...conditionParams);
   const statements: D1PreparedStatement[] = [];
   let set: string[] = [];
   let setParams: unknown[] = [];
@@ -202,14 +210,10 @@ export async function commitChange(db: D1Database, gameId: number, expectedVersi
       break;
   }
 
-  const from = FROM_STATUS[change.kind];
   statements.push(
     db
-      .prepare(
-        `UPDATE games SET ${[...set, "version = version + 1"].join(", ")}
-         WHERE id = ? AND version = ? AND status IN (${from.map(() => "?").join(", ")})`,
-      )
-      .bind(...setParams, gameId, expectedVersion, ...from),
+      .prepare(`UPDATE games SET ${[...set, "version = version + 1"].join(", ")} WHERE ${condition}`)
+      .bind(...setParams, ...conditionParams),
   );
 
   const results = await db.batch(statements);
