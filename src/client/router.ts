@@ -11,7 +11,11 @@ export function usePath(): string {
   return path;
 }
 
-export function navigate(to: string) {
-  history.pushState(null, "", to);
+export function navigate(to: string, { replace = false }: { replace?: boolean } = {}) {
+  if (replace) history.replaceState(null, "", to);
+  else {
+    history.pushState(null, "", to);
+    scrollTo(0, 0);
+  }
   dispatchEvent(new PopStateEvent("popstate"));
 }
