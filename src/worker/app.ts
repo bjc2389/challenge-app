@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { adminRoutes } from "./api/admin";
 import { gameRoutes } from "./api/games";
 import { historyRoutes } from "./api/history";
 import type { Env } from "./env";
@@ -32,6 +33,7 @@ export function createApp(deps: Deps = defaultDeps) {
   app.route("/", authRoutes(deps));
   app.route("/", gameRoutes(deps));
   app.route("/", historyRoutes(deps));
+  app.route("/", adminRoutes(deps));
 
   app.notFound(handleNotFound);
   app.onError(handleError);

@@ -207,8 +207,8 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 - Times on history screens are shown as `m:ss`.
 - **`/admin`:**
   - Admin login.
-  - A games table showing code, date, status, teams, result and test flag. Each game can be marked or unmarked as a test, or deleted (with confirmation; this is a permanent delete).
-  - A read-only view of the catalog.
+  - A games table showing every game, test and in-progress games included, newest created first: code (linking to the game), created date, status, teams, result and test flag. Each game can be marked or unmarked as a test, or deleted (with confirmation; this is a permanent delete). Deleting a game in progress is allowed, and the confirmation warns that anyone playing it will lose it.
+  - A read-only view of the catalog, inactive categories and tasks included and shown muted. Active categories come first, each group in catalog order; tasks are ordered by id.
 
 ## 10. API
 
@@ -247,10 +247,11 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
   - `version` goes up by exactly 1 on every change. Requests that change nothing don't bump it.
   - Finished and abandoned games still return their full state.
 - **Admin:**
-  - `GET /api/admin/games`
-  - `PATCH /api/admin/games/:code` (sets `isTest`)
-  - `DELETE /api/admin/games/:code`
-  - `GET /api/admin/catalog`
+  - `GET /api/admin/games` returns `{items}`: every game, newest created first, as `{code, status, isTest, createdAt, startedAt, endedAt, endReason, winnerTeamId, elapsedMs, teams: [{id, slot, name, score}]}`. Like history, it first finalizes games whose time ran out.
+  - `PATCH /api/admin/games/:code`, with body exactly `{isTest}` (a boolean), returns the updated game in the same shape. The test flag isn't game state, so it doesn't bump the game's `version`.
+  - `DELETE /api/admin/games/:code` returns `{ok: true}` after deleting the game and all its rows (§8).
+  - `GET /api/admin/catalog` returns `{categories: [{id, name, order, countPerGame, final, active, tasks: [{id, text, active}]}]}`, inactive entries included.
+  - Unknown games return 404.
 - **Errors** return `{error, message}` with these status codes:
   - 401: not logged in
   - 403: wrong role
