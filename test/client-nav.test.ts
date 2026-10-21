@@ -16,6 +16,8 @@ describe("§3 §9 safeNextPath (redirect target after /login)", () => {
     ["an empty string", ""],
     ["a tab inside //", "/\t/evil.example"],
     ["a newline inside //", "/\n/evil.example"],
+    ["a dot segment before //", "/.//evil.example"],
+    ["an encoded dot segment before //", "/%2e//evil.example"],
     ["the login page with a query", "/login?next=/admin"],
   ])("returns / for %s (%j)", (_name, raw) => {
     expect(safeNextPath(raw)).toBe("/");
