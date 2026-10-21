@@ -221,12 +221,8 @@ export async function commitChange(db: D1Database, gameId: number, expectedVersi
   return results.at(-1)!.meta.changes === 1;
 }
 
-/**
- * SPEC.md §4: the first request touching an expired game finalizes it. Returns the
- * current snapshot, reloaded if anything may have changed.
- */
-export async function finalizeIfExpired(db: D1Database, snap: Snapshot, now: number): Promise<Snapshot> {
-  if (!isExpired(snap.game, now)) return snap;
+/** Commits the timeout result for an expired game. False if another write got there first. */
+async function commitTimeout(db: D1Database, snap: Snapshot): Promise<boolean> {
   const winnerTeamId = timeoutWinner(
     snap.teams.map((team) => ({
       teamId: team.id,
@@ -235,11 +231,45 @@ export async function finalizeIfExpired(db: D1Database, snap: Snapshot, now: num
       ),
     })),
   );
-  // If this loses a race, another request finalized it; either way reload.
-  await commitChange(db, snap.game.id, snap.game.version, {
+  return commitChange(db, snap.game.id, snap.game.version, {
     kind: "timeout",
     endedAt: snap.game.endsAt!,
     winnerTeamId,
   });
+}
+
+/**
+ * SPEC.md §4: the first request touching an expired game finalizes it. Returns the
+ * current snapshot, reloaded if anything may have changed.
+ */
+export async function finalizeIfExpired(db: D1Database, snap: Snapshot, now: number): Promise<Snapshot> {
+  if (!isExpired(snap.game, now)) return snap;
+  // If this loses a race, another request finalized it; either way reload.
+  await commitTimeout(db, snap);
   return (await loadSnapshot(db, snap.game.code)) ?? snap;
+}
+
+/**
+ * Each swept game costs about five D1 queries, so a small limit keeps a request well
+ * inside the per-request query budget. Any left over go on the next request.
+ */
+export const SWEEP_LIMIT = 5;
+
+/**
+ * SPEC.md §4: history finalizes games whose time ran out but nobody opened since,
+ * oldest deadline first. Test games are swept too, so their state stays right.
+ * Returns how many this call finalized.
+ */
+export async function sweepExpiredGames(db: D1Database, now: number, limit = SWEEP_LIMIT): Promise<number> {
+  const { results } = await db
+    .prepare("SELECT code FROM games WHERE status = 'active' AND ends_at <= ? ORDER BY ends_at, id LIMIT ?")
+    .bind(now, limit)
+    .all<{ code: string }>();
+  let swept = 0;
+  for (const { code } of results) {
+    const snap = await loadSnapshot(db, code);
+    // A lost race means another request already finalized it.
+    if (snap && isExpired(snap.game, now) && (await commitTimeout(db, snap))) swept += 1;
+  }
+  return swept;
 }

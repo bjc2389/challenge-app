@@ -1,6 +1,7 @@
 import { Admin } from "./pages/Admin";
 import { Game } from "./pages/Game";
 import { History } from "./pages/History";
+import { HistoryGame } from "./pages/HistoryGame";
 import { Home } from "./pages/Home";
 import { Login } from "./pages/Login";
 import { NotFound } from "./pages/NotFound";
@@ -19,8 +20,9 @@ export function App() {
     case "game":
       return <Game key={route.code ?? "none"} code={route.code} canonical={route.canonical} />;
     case "history":
-    case "historyGame":
       return <History />;
+    case "historyGame":
+      return <HistoryGame key={route.code ?? "none"} code={route.code} />;
     case "notFound":
       return <NotFound />;
   }
