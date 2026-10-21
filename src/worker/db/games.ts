@@ -117,8 +117,9 @@ const FROM_STATUS: Record<Change["kind"], GameStatus[]> = {
 /**
  * Commits one change as a single D1 batch (one transaction). Every statement only
  * takes effect while the game still has `expectedVersion`, an allowed status and
- * (for player actions) time left; the last one bumps the version. Returns false, having written nothing, if another write got
- * there first. Throws, with nothing written, if any statement fails.
+ * (for player actions) time left; the last one bumps the version. Returns false,
+ * having written nothing, if another write got there first. Throws, with nothing
+ * written, if any statement fails.
  */
 export async function commitChange(db: D1Database, gameId: number, expectedVersion: number, change: Change) {
   // Every statement carries the same condition as the final games UPDATE: version,

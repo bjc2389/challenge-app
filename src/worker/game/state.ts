@@ -47,8 +47,8 @@ const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 
 /** SPEC.md §4: rename both teams in setup or rolled. Same names again is a noop. */
 export function decideRename(snap: Snapshot, body: unknown): Decision {
-  const blocked = gate(snap, "renameTeams", 0);
-  if (blocked) return blocked;
+  // Only setup and rolled allow renaming, and neither has a deadline.
+  if (!canDo(snap.game.status, "renameTeams")) return statusError(snap.game.status);
   if (!isObject(body)) return error(422, "validation", "Send JSON with team1 and team2");
   const result = validateTeamNames(body.team1, body.team2);
   if (!result.ok) return error(422, "validation", result.message);
