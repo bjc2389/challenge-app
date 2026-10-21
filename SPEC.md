@@ -184,16 +184,18 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 ## 9. Screens
 
 - **`/login`:** a password field.
-- **`/` (home):** New game, Join by code, History.
+- **`/` (home):** New game, Join by code (accepts lowercase, spaces or a pasted link), History, and a small Log out link. If the last game this phone opened is still in progress, a Resume button returns to it.
 - **`/g/:code` (game):**
+  - Every stage before the end shows the game code with a Share button (the phone's share sheet, or copy link) and Abandon (with confirmation).
   - *Setup:* two name fields and "Roll the dice."
-  - *Rolled:* the task list, editable names, a big Start button, and Abandon.
+  - *Rolled:* the task list, editable names, a big Start button, and Abandon. On the phone that rolled, the tasks appear one by one, with the final puzzle last (no animation with reduced motion).
   - *Active:*
     - The header shows the countdown and the score (tasks done per team).
     - The body is a grid: one row per task, with a checkbox column for each team.
     - The final row shows a lock for each team until it unlocks.
     - Tapping a checked box asks to confirm an undo.
-    - There's a button to share the code or link, and Abandon (with confirmation).
+    - The countdown runs on the server's clock. At zero it shows "Time!", disables taps and waits for the server's result.
+    - Phones that support it keep the screen awake during the game.
   - *Over:* a result banner (winner, tie or abandoned), the final board, and a link to the game's history page.
 - **`/history`:** finished and abandoned games, newest first, with abandoned games labeled. A records block shows:
   - fastest win

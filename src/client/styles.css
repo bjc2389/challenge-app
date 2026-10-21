@@ -76,3 +76,374 @@ button:disabled {
   color: var(--navy);
   font-weight: 600;
 }
+
+/* Shared --------------------------------------------------------------- */
+
+.display {
+  font-family: "Anybody", system-ui, sans-serif;
+}
+
+h2 {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 700;
+  margin: 0;
+}
+
+a {
+  color: var(--blue);
+  font-weight: 600;
+}
+
+a.quiet {
+  color: var(--navy);
+  font-weight: 400;
+}
+
+.stack.tight {
+  gap: 0.25rem;
+}
+
+.row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.row input {
+  flex: 1;
+  min-width: 0;
+}
+
+button.secondary {
+  background: var(--white);
+  color: var(--navy);
+  border: 2px solid var(--navy);
+}
+
+button.danger {
+  background: var(--navy);
+}
+
+button.big,
+button.start {
+  min-height: 56px;
+  font-size: 1.15rem;
+}
+
+button.start {
+  min-height: 64px;
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1.5rem;
+}
+
+button.abandon {
+  margin-top: 1.5rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+#join-code {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
+/* Game header and share ------------------------------------------------- */
+
+.game-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.game-code {
+  margin: 0;
+}
+
+.game-code strong {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-size: 1.5rem;
+  letter-spacing: 0.1em;
+}
+
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.share-url {
+  width: 100%;
+}
+
+/* Active game: timer and scores ----------------------------------------- */
+
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -1.5rem -1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--white);
+  border-bottom: 2px solid var(--navy);
+}
+
+.timer {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--orange);
+  font-variant-numeric: tabular-nums;
+  min-width: 5ch;
+}
+
+.scoreboard {
+  display: flex;
+  gap: 1rem;
+}
+
+.score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 6rem;
+}
+
+.score-number {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.score-name {
+  font-size: 0.8rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Task board ------------------------------------------------------------ */
+
+.board {
+  display: flex;
+  flex-direction: column;
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 1fr repeat(2, minmax(4.5rem, 6rem));
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 56px;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(0, 38, 87, 0.15);
+}
+
+.board-head {
+  min-height: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.board-head span:not(:first-child) {
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.task {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.category {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.task-text {
+  overflow-wrap: anywhere;
+}
+
+.board-row.final {
+  border-top: 3px solid var(--orange);
+}
+
+.board-row.final .category {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-size: 1rem;
+  color: var(--orange);
+}
+
+.cell {
+  width: 100%;
+  min-height: 56px;
+  padding: 0;
+  background: var(--white);
+  color: var(--white);
+  border: 2px solid var(--navy);
+  font-size: 1.5rem;
+}
+
+.cell.done.team-1 {
+  background: var(--blue);
+  border-color: var(--blue);
+}
+
+.cell.done.team-2 {
+  background: var(--navy);
+}
+
+.cell.locked {
+  background: rgba(0, 38, 87, 0.08);
+  border-style: dashed;
+}
+
+.cell[aria-disabled="true"] {
+  cursor: default;
+}
+
+.cell[aria-busy="true"] {
+  animation: pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes pulse {
+  to {
+    opacity: 0.45;
+  }
+}
+
+/* Roll reveal: rows arrive one by one, the final puzzle last. */
+.board.reveal .board-row:not(.board-head) {
+  animation: reveal 0.35s ease-out both;
+  animation-delay: calc(var(--i) * 90ms);
+}
+
+.board.reveal .board-row.final {
+  animation-name: reveal-final;
+  animation-duration: 0.5s;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+@keyframes reveal-final {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  70% {
+    transform: scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board.reveal .board-row,
+  .cell[aria-busy="true"] {
+    animation: none;
+  }
+}
+
+/* Result, dialog and notices -------------------------------------------- */
+
+.result {
+  margin: -1.5rem -1rem 0;
+  padding: 1.5rem 1rem;
+  background: var(--navy);
+  color: var(--white);
+}
+
+.result h1 {
+  margin: 0 0 0.25rem;
+  color: var(--orange);
+  font-size: 2.25rem;
+}
+
+.result h1:focus {
+  outline: none;
+}
+
+.result p {
+  margin: 0;
+}
+
+dialog.confirm {
+  max-width: min(24rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  border: none;
+  border-radius: 0.75rem;
+  color: var(--navy);
+}
+
+dialog.confirm::backdrop {
+  background: rgba(0, 38, 87, 0.5);
+}
+
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.confirm-actions button {
+  flex: 1 1 8rem;
+}
+
+.toast,
+.reconnecting {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  max-width: 30rem;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background: var(--navy);
+  color: var(--white);
+  font-weight: 600;
+}
+
+.reconnecting {
+  bottom: auto;
+  top: 0.5rem;
+  background: var(--blue);
+}
+
+/* Very small phones: give the task text more room. */
+@media (max-width: 359px) {
+  .board-row {
+    grid-template-columns: 1fr repeat(2, minmax(3.5rem, 4.25rem));
+  }
+
+  .timer {
+    font-size: 2.5rem;
+  }
+}
