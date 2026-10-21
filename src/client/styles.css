@@ -454,3 +454,155 @@ dialog.confirm::backdrop {
     font-size: 2.5rem;
   }
 }
+
+/* History ---------------------------------------------------------------- */
+
+.records dl {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.record {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem 0.5rem;
+  border: 2px solid var(--navy);
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.record dt {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.record dd {
+  margin: 0;
+}
+
+.record-value {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 900;
+  font-size: 1.75rem;
+  color: var(--orange);
+  font-variant-numeric: tabular-nums;
+}
+
+.record-holder {
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
+.history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+a.history-item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  padding: 0.75rem;
+  border: 2px solid var(--navy);
+  border-radius: 0.5rem;
+  color: var(--navy);
+  text-decoration: none;
+  font-weight: 400;
+}
+
+.history-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.history-score {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.history-meta {
+  font-size: 0.85rem;
+}
+
+.tag-abandoned {
+  padding: 0 0.4rem;
+  border: 1px solid var(--navy);
+  border-radius: 0.25rem;
+  font-weight: 600;
+}
+
+.quiet-note {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.team-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.team-summary dt {
+  font-family: "Anybody", system-ui, sans-serif;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.team-summary dd {
+  margin: 0;
+}
+
+.splits {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.splits th,
+.splits td {
+  padding: 0.5rem 0.25rem;
+  border-bottom: 1px solid rgba(0, 38, 87, 0.15);
+  text-align: right;
+}
+
+.splits th:first-child {
+  text-align: left;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+.splits thead th {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.event-log {
+  margin: 0;
+  padding-left: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.event-log li {
+  padding: 0.2rem 0;
+}
+
+.event-time {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+@media (max-width: 359px) {
+  .records dl {
+    grid-template-columns: 1fr;
+  }
+}

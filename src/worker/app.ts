@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { gameRoutes } from "./api/games";
+import { historyRoutes } from "./api/history";
 import type { Env } from "./env";
 import { rejectCrossOrigin, requireSession } from "./auth/middleware";
 import { LOGIN_FAILURE_DELAY_MS, authRoutes } from "./auth/routes";
@@ -30,6 +31,7 @@ export function createApp(deps: Deps = defaultDeps) {
   app.get("/health", (c) => c.json({ ok: true, env: c.env.APP_ENV }));
   app.route("/", authRoutes(deps));
   app.route("/", gameRoutes(deps));
+  app.route("/", historyRoutes(deps));
 
   app.notFound(handleNotFound);
   app.onError(handleError);

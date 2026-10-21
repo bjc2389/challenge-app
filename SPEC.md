@@ -69,7 +69,7 @@ States: `setup` → `rolled` → `active` → `finished` or `abandoned`.
 
 - **Completion:** a team completes the final task. The game becomes `finished` with that team as winner, `end_reason=completed`, and `ended_at` set to the completion time.
   - This must be a conditional write (only if the game is still active), so two simultaneous finishes produce exactly one winner.
-- **Timeout:** the first request that touches the game at or after `ends_at` finalizes it, including a plain `GET`. History endpoints also sweep and finalize expired games (M5).
+- **Timeout:** the first request that touches the game at or after `ends_at` finalizes it, including a plain `GET`. Both history endpoints first sweep and finalize expired games, up to 5 per request (the rest on the next request); the detail endpoint also finalizes its own game.
   - The team with the most completed tasks wins.
   - If tied, the team with the earlier last completion wins.
   - If still tied, the result is a tie with no winner.
@@ -197,13 +197,14 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
     - The countdown runs on the server's clock. At zero it shows "Time!", disables taps and waits for the server's result.
     - Phones that support it keep the screen awake during the game.
   - *Over:* a result banner (winner, tie or abandoned), the final board, and a link to the game's history page.
-- **`/history`:** finished and abandoned games, newest first, with abandoned games labeled. A records block shows:
-  - fastest win
-  - fastest puzzle (from a team's last non-final completion to its puzzle completion)
-  - games played
+- **`/history`:** finished and abandoned games, newest first, with abandoned games labeled. Each shows the date, the score ("Reds 4 – 3 Blues"), the result and how long it took. The list shows the newest 25 games, with a note when there are more. A records block shows:
+  - **fastest win:** the shortest game won by solving the puzzle (timeout wins always last the full hour, so they don't count);
+  - **fastest puzzle:** from a team's last non-final completion to its puzzle completion, using the final state (after an undo and redo, the redo counts);
+  - **games played:** finished games, including timeouts and ties.
 
-  Records exclude abandoned games. Test games are hidden entirely.
-- **`/history/:code`:** teams, result, end reason, duration, each team's split time per task (minutes from start), and the full event log including undos.
+  Records cover every game, not just the 25 listed. Ties go to whoever set the time first. Records exclude abandoned games. Test games are hidden entirely.
+- **`/history/:code`:** teams, result, end reason, duration, each team's split time per task (minutes:seconds from start; undone tasks show "—"), the winner's puzzle time, and the full event log including undos. Games in progress and test games show "not found".
+- Times on history screens are shown as `m:ss`.
 - **`/admin`:**
   - Admin login.
   - A games table showing code, date, status, teams, result and test flag. Each game can be marked or unmarked as a test, or deleted (with confirmation; this is a permanent delete).
@@ -226,9 +227,16 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
   - `POST /api/games/:code/tasks/:id/complete`, with body `{teamId}`
   - `POST /api/games/:code/tasks/:id/undo`, with body `{teamId}`
   - `POST /api/games/:code/abandon`
-  - `GET /api/history`
-  - `GET /api/history/:code`
-- **Game view.** Every game endpoint above returns the whole game on success:
+  - `GET /api/history` returns `{items, hasMore, records}`:
+    - `items`: up to 25 of `{code, status, startedAt, endedAt, elapsedMs, endReason, winnerTeamId, teams: [{id, slot, name, score}]}`;
+    - `records`: `fastestWin` and `fastestPuzzle` are `{code, teamName, ms, endedAt}` or null; `gamesPlayed` is a number.
+  - `GET /api/history/:code` returns `{game, teams, tasks, events}`:
+    - `game`: `{code, status, createdAt, startedAt, endsAt, endedAt, endReason, winnerTeamId, elapsedMs}`;
+    - `teams`: `[{id, slot, name, score, puzzleMs}]`;
+    - `tasks`: `[{id, sortOrder, categoryName, text, isFinal, splitMs: [slot 1, slot 2]}]`;
+    - `events`: `[{id, at, sinceStartMs, teamId, taskId, action}]`, ordered by time.
+    - It returns 404 for unknown, test and in-progress games.
+- **Game view.** Every `/api/games` endpoint above returns the whole game on success:
   ```
   { serverNow, version,
     game: { code, status, createdAt, rolledAt, startedAt, endsAt, endedAt, endReason, winnerTeamId, durationMs },
