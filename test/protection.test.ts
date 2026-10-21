@@ -35,6 +35,8 @@ describe("§3 §10 anonymous requests to protected routes get 401", () => {
     ["POST", "/api/games/ABCDE/tasks/1/undo"],
     ["POST", "/api/games/ABCDE/abandon"],
     ["GET", "/api/history"],
+    ["GET", "/api/history/ABCDE"],
+    ["GET", "/api/history/abcde"],
     ["GET", "/api/admin/games"],
     ["GET", "/api/admin"],
     // Auth runs before routing: unknown paths are not revealed as 404.
