@@ -2,7 +2,17 @@ import { describe, expect, it } from "vitest";
 import { base64urlEncode, hmacSign } from "../src/worker/auth/crypto";
 import { PUBLIC_ROUTES } from "../src/worker/auth/middleware";
 import { signSession } from "../src/worker/auth/session";
-import { NOW, SESSION_SECRET, cookieFor, expectError, makeDeps, testApp, withCookie } from "./helpers/auth";
+import {
+  NOW,
+  SESSION_SECRET,
+  cookieFor,
+  expectError,
+  expectValidationError,
+  makeDeps,
+  testApp,
+  withCookie,
+} from "./helpers/auth";
+import { expectApiError } from "./helpers/game";
 
 const ROTATED_AWAY_SECRET = "fake-old-session-secret-rotated-away";
 
@@ -38,7 +48,11 @@ describe("§3 §10 anonymous requests to protected routes get 401", () => {
     ["GET", "/api/history/ABCDE"],
     ["GET", "/api/history/abcde"],
     ["GET", "/api/admin/games"],
+    ["PATCH", "/api/admin/games/ABCDE"],
+    ["DELETE", "/api/admin/games/ABCDE"],
+    ["GET", "/api/admin/catalog"],
     ["GET", "/api/admin"],
+    ["GET", "/api/admin/"],
     // Auth runs before routing: unknown paths are not revealed as 404.
     ["GET", "/api/nope"],
     ["GET", "/api"],
@@ -150,9 +164,35 @@ describe("§3 §10 role checks (403)", () => {
     await expectError(res, 404, "not_found", "Not found");
   });
 
-  it.each(adminPaths)("an admin passes auth on %s %s (404: no admin routes yet)", async (method, path) => {
+  // M6: the admin routes exist, so an admin gets each route's real status. PATCH with no
+  // body is a validation error (the code ABCDE is well-formed, and the body is checked
+  // before the game is looked up); DELETE of an unknown game is 404.
+  const adminStatuses: Array<[string, string, number]> = [
+    ["GET", "/api/admin", 404],
+    ["GET", "/api/admin/", 404],
+    ["GET", "/api/admin/games", 200],
+    ["PATCH", "/api/admin/games/ABCDE", 422],
+    ["DELETE", "/api/admin/games/ABCDE", 404],
+    ["GET", "/api/admin/catalog", 200],
+    ["GET", "/api/admin/login", 404],
+  ];
+
+  it("every admin path has an expected admin status", () => {
+    expect(adminStatuses.map(([m, p]) => `${m} ${p}`)).toEqual(adminPaths.map(([m, p]) => `${m} ${p}`));
+  });
+
+  it.each(adminStatuses)("an admin passes auth on %s %s (%i)", async (method, path, status) => {
     const res = await testApp().request(path, withCookie(await cookieFor("admin"), { method }));
-    await expectError(res, 404, "not_found", "Not found");
+    if (status === 200) {
+      expect(res.status).toBe(200);
+    } else if (status === 422) {
+      await expectValidationError(res);
+    } else if (method === "DELETE") {
+      // The game route's 404; its message isn't fixed by the plan.
+      await expectApiError(res, 404, "not_found");
+    } else {
+      await expectError(res, 404, "not_found", "Not found");
+    }
   });
 
   it("an admin also has player access", async () => {

@@ -37,9 +37,9 @@ describe("§3 admin login (POST /api/admin/login): existing sessions", () => {
     const token = cookies[0]?.value ?? "";
     expect(await verifySession(token, SESSION_SECRET, NOW)).toEqual({ role: "admin", exp: NOW + ADMIN_TTL_MS });
 
-    // The new cookie grants admin access: admin paths pass auth (404, since none exist yet), not 403.
+    // The new cookie grants admin access: the admin list answers 200, not 403.
     const admin = await request("/api/admin/games", { headers: { cookie: `session=${token}` } });
-    expect(admin.status).toBe(404);
+    expect(admin.status).toBe(200);
   });
 
   it("is reachable by a logged-in player (public route, not 403)", async () => {
