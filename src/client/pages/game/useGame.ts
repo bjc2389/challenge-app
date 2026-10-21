@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import { ApiError, apiFetch } from "../../api";
 import { betterSample, sampleOffset, type ClockSample } from "../../game/clock";
 import { errorMessage } from "../../game/errors";
@@ -32,7 +32,8 @@ export function useGame(code: string) {
   const apply = useCallback((next: GameView) => setView((current) => pickNewer(current, next)), []);
 
   const status = view?.game.status ?? null;
-  useEffect(() => {
+  // Before paint, so the rolled list never flashes fully drawn before the reveal.
+  useLayoutEffect(() => {
     if (status && shouldReveal(prevStatus.current, status)) setReveal(true);
     prevStatus.current = status;
   }, [status]);
