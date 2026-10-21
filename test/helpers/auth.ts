@@ -29,29 +29,44 @@ export const SESSION_SECRET = env.SESSION_SECRET as string;
 export const NOW = Date.UTC(2026, 9, 20, 12, 0, 0);
 
 import type { Deps } from "../../src/worker/app";
+import type { RandomInt } from "../../src/worker/game/types";
+import { cryptoRandomInt } from "../../src/worker/random";
 
 export type { Deps };
 
 /**
- * Injected clock and delay. `delays` records every requested delay.
- * With `manualDelay`, each delay stays pending until `releaseDelays()` is called.
+ * Injected clock, delay and random source.
+ * - The clock starts at `opts.now` (default NOW) and only moves through `setNow`/`advance`.
+ * - `delays` records every requested delay. With `manualDelay`, each delay stays pending
+ *   until `releaseDelays()` is called.
+ * - `random` defaults to the real crypto source; tests script it with `seqRandom`.
  */
-export function makeDeps(opts: { now?: number; manualDelay?: boolean } = {}) {
+export function makeDeps(opts: { now?: number; manualDelay?: boolean; random?: RandomInt } = {}) {
   const delays: number[] = [];
   const pending: Array<() => void> = [];
+  let current = opts.now ?? NOW;
   const deps: Deps = {
-    now: () => opts.now ?? NOW,
+    now: () => current,
     delay(ms: number) {
       delays.push(ms);
       if (opts.manualDelay) return new Promise<void>((resolve) => pending.push(resolve));
       return Promise.resolve();
     },
+    randomInt: opts.random ?? cryptoRandomInt,
   };
   return {
     deps,
     delays,
     releaseDelays() {
       for (const resolve of pending.splice(0)) resolve();
+    },
+    /** Sets the injected clock to `ms` (UTC epoch ms). */
+    setNow(ms: number) {
+      current = ms;
+    },
+    /** Moves the injected clock forward by `ms`. */
+    advance(ms: number) {
+      current += ms;
     },
   };
 }
