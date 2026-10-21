@@ -7,6 +7,7 @@ import { rejectCrossOrigin, requireSession } from "./auth/middleware";
 import { LOGIN_FAILURE_DELAY_MS, authRoutes } from "./auth/routes";
 import type { Session } from "./auth/session";
 import { handleError, handleNotFound } from "./errors";
+import { securityHeaders } from "./headers";
 import type { RandomInt } from "./game/types";
 import { cryptoRandomInt } from "./random";
 
@@ -27,6 +28,7 @@ export const defaultDeps: Deps = {
 export function createApp(deps: Deps = defaultDeps) {
   const app = new Hono<AppEnv>().basePath("/api");
 
+  app.use("*", securityHeaders);
   app.use("*", rejectCrossOrigin);
   app.use("*", requireSession(deps));
   app.get("/health", (c) => c.json({ ok: true, env: c.env.APP_ENV }));

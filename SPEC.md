@@ -40,8 +40,9 @@
 - **What's protected:** every `/api/*` route requires a session, except `POST /api/login`, `POST /api/logout`, `POST /api/admin/login` and `GET /api/health`.
   - No valid session returns 401. A player session on `/api/admin` or `/api/admin/*` returns 403.
   - Static files and the app shell are public because they contain no data.
-  - The client sends the user to `/login?next=<path>` whenever the API returns 401, except on `/login` and `/admin`, which show their own password form. After logging in it returns to that path if it is same-origin and not `/login` or `/admin`.
+  - The client sends the user to `/login?next=<path>` whenever the API returns 401, except on `/login` and `/admin`, which show their own password form. After logging in it returns to that path if it is same-origin and not `/login` or `/admin`. Both steps replace the current history entry, so Back never lands on a page that redirects again.
   - State-changing requests (anything but GET, HEAD and OPTIONS) whose `Origin` or `Sec-Fetch-Site` header shows another origin get 403.
+- **Headers:** every `/api` response, errors included, has `Cache-Control: no-store`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: same-origin` and `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`. Static files get a Content-Security-Policy that allows only the app's own files and Google Fonts, plus nosniff, a same-origin referrer policy, no framing and `noindex`, from `public/_headers`.
 - **Secrets:** an unset or empty secret, or a `SESSION_SECRET` shorter than 32 characters, counts as missing. The affected login and protected routes then return 500, and only the variable's name is logged.
 - `/admin` is not linked anywhere in the UI.
 
@@ -205,6 +206,7 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
   Records cover every game, not just the 25 listed. Ties go to whoever set the time first. Records exclude abandoned games. Test games are hidden entirely.
 - **`/history/:code`:** teams, result, end reason, duration, each team's split time per task (minutes:seconds from start; undone tasks show "—"), the winner's puzzle time, and the full event log including undos. Games in progress and test games show "not found".
 - Times on history screens are shown as `m:ss`.
+- Unknown paths show a not-found page. An unexpected error while showing a page shows "Something went wrong" with Reload and Home, never a blank screen.
 - **`/admin`:**
   - Admin login.
   - A games table showing every game, test and in-progress games included, newest created first: code (linking to the game), created date, status, teams, result and test flag. Each game can be marked or unmarked as a test, or deleted (with confirmation; this is a permanent delete). Deleting a game in progress is allowed, and the confirmation warns that anyone playing it will lose it.

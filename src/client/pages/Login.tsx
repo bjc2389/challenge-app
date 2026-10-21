@@ -7,7 +7,7 @@ export function Login() {
   return (
     <main>
       <h1>Challenge</h1>
-      <PasswordForm endpoint="/api/login" onSuccess={() => navigate(next)} />
+      <PasswordForm endpoint="/api/login" onSuccess={() => navigate(next, { replace: true })} />
     </main>
   );
 }
