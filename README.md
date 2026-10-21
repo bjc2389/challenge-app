@@ -7,6 +7,7 @@ A two-team party race game. See [SPEC.md](SPEC.md) for what it does and [CLAUDE.
 ```sh
 npm ci
 cp .dev.vars.example .dev.vars   # fill in local-only values
+npm run db:local                 # create or update the local database (safe to repeat)
 npm run dev                      # builds the client, then serves everything on http://localhost:8787
 ```
 
@@ -14,4 +15,4 @@ npm run dev                      # builds the client, then serves everything on 
 
 The session cookie is always `Secure`. Chrome and Firefox accept that on `http://localhost`; Safari may not, so use Chrome or Firefox for local testing.
 
-`npm run check`, `npm test`, `npm run build` and `npm run verify:deploy` are what CI runs.
+`npm run check`, `npm test`, `npm run build`, `npm run verify:deploy` and `npm run db:local` are what CI runs.

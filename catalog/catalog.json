@@ -1,0 +1,19 @@
+{
+  "categories": [
+    { "id": "beer", "name": "Beer", "order": 1, "countPerGame": 1 },
+    { "id": "tough-drink", "name": "Tough Drink", "order": 2, "countPerGame": 2 },
+    { "id": "food", "name": "Food Challenge", "order": 3, "countPerGame": 1 },
+    { "id": "cognitive", "name": "Cognitive", "order": 4, "countPerGame": 1 },
+    { "id": "puzzle", "name": "Final Puzzle", "order": 5, "countPerGame": 1, "final": true }
+  ],
+  "tasks": [
+    { "id": "beer-case-24", "category": "beer", "text": "Finish a 24-can case" },
+    { "id": "four-loko", "category": "tough-drink", "text": "Four Loko" },
+    { "id": "natty-daddy", "category": "tough-drink", "text": "Natty Daddy" },
+    { "id": "syrup-challenge", "category": "food", "text": "Syrup challenge (TBD)" },
+    { "id": "banana-challenge", "category": "food", "text": "Banana challenge (TBD)" },
+    { "id": "word-search", "category": "cognitive", "text": "Complete a word search" },
+    { "id": "puzzle-250", "category": "puzzle", "text": "250-piece puzzle" },
+    { "id": "puzzle-500", "category": "puzzle", "text": "500-piece puzzle" }
+  ]
+}
