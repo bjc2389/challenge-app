@@ -60,10 +60,12 @@ export function History() {
                       </span>
                       <span class="history-score">{scoreLine(item)}</span>
                       <span class="history-meta">
+                        {/* The tag already says "Abandoned"; the line says when. */}
                         {item.status === "abandoned"
-                          ? endReasonText(item)
-                          : `${resultText(item)} · ${endReasonText(item)}`}{" "}
-                        · {formatElapsed(item.elapsedMs)}
+                          ? item.startedAt === null
+                            ? "Before the start"
+                            : `After ${formatElapsed(item.elapsedMs)}`
+                          : `${resultText(item)} · ${endReasonText(item)} · ${formatElapsed(item.elapsedMs)}`}
                       </span>
                     </Link>
                   </li>

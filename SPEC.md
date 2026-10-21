@@ -229,14 +229,14 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
   - `POST /api/games/:code/abandon`
   - `GET /api/history` returns `{items, hasMore, records}`:
     - `items`: up to 25 of `{code, status, startedAt, endedAt, elapsedMs, endReason, winnerTeamId, teams: [{id, slot, name, score}]}`;
-    - `records`: `{fastestWin, fastestPuzzle, gamesPlayed}`, each holder `{code, teamName, ms, endedAt}` or null.
+    - `records`: `fastestWin` and `fastestPuzzle` are `{code, teamName, ms, endedAt}` or null; `gamesPlayed` is a number.
   - `GET /api/history/:code` returns `{game, teams, tasks, events}`:
     - `game`: `{code, status, createdAt, startedAt, endsAt, endedAt, endReason, winnerTeamId, elapsedMs}`;
     - `teams`: `[{id, slot, name, score, puzzleMs}]`;
     - `tasks`: `[{id, sortOrder, categoryName, text, isFinal, splitMs: [slot 1, slot 2]}]`;
     - `events`: `[{id, at, sinceStartMs, teamId, taskId, action}]`, ordered by time.
     - It returns 404 for unknown, test and in-progress games.
-- **Game view.** Every game endpoint above returns the whole game on success:
+- **Game view.** Every `/api/games` endpoint above returns the whole game on success:
   ```
   { serverNow, version,
     game: { code, status, createdAt, rolledAt, startedAt, endsAt, endedAt, endReason, winnerTeamId, durationMs },

@@ -30,7 +30,7 @@ export function elapsedMs(game: { startedAt: number | null; endedAt: number | nu
 }
 
 /** From the moment the puzzle unlocked (last other task, or the start) to solving it. */
-export function puzzleMs(team: HistoryTeam, startedAt: number | null): number | null {
+export function puzzleMs(team: Pick<HistoryTeam, "lastNonFinalAt" | "finalAt">, startedAt: number | null): number | null {
   const from = team.lastNonFinalAt ?? startedAt;
   return team.finalAt === null || from === null ? null : team.finalAt - from;
 }

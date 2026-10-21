@@ -57,10 +57,6 @@ export function toHistoryDetail(snap: Snapshot, events: EventRow[]) {
         score: scoreFor(teamTasks, team.id),
         puzzleMs: puzzleMs(
           {
-            id: team.id,
-            slot: team.slot,
-            name: team.name,
-            score: 0,
             lastNonFinalAt: nonFinal.length > 0 ? Math.max(...nonFinal) : null,
             finalAt: finalTask ? completedAt(team.id, finalTask.id) : null,
           },

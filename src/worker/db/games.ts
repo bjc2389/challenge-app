@@ -268,7 +268,8 @@ export async function sweepExpiredGames(db: D1Database, now: number, limit = SWE
   let swept = 0;
   for (const { code } of results) {
     const snap = await loadSnapshot(db, code);
-    // A lost race means another request already finalized it.
+    // A lost race means another write landed first (another finalize, or a late
+    // completion); the game is then finalized by the next request that touches it.
     if (snap && isExpired(snap.game, now) && (await commitTimeout(db, snap))) swept += 1;
   }
   return swept;
