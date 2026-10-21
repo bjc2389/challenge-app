@@ -22,10 +22,11 @@
 **Cloudflare build settings (per Worker)**
 
 - Build command: `npm ci && npm run check && npm test && npm run build`
-- Deploy command: `npm run deploy:<env>`. In order, it applies D1 migrations to the remote database, runs the catalog sync SQL there, then runs `wrangler deploy --env <env>`.
+- Deploy command: `npm run deploy:<env>`. In order, it validates the catalog and generates the sync SQL locally, applies D1 migrations to the remote database, runs the catalog sync SQL there, then runs `wrangler deploy --env <env>`. Any failing step stops the deploy.
+- The build's API token needs **Account → D1 → Edit** for the migration and sync steps.
 - Non-production branch builds are off.
 
-**GitHub Actions** runs a job named `ci` on every pull request to `staging` or `main`: install, check, test, build, and a `wrangler deploy --dry-run` of both environments (`npm run verify:deploy`). Rulesets on both branches require `ci` to pass.
+**GitHub Actions** runs a job named `ci` on every pull request to `staging` or `main`: install, check, test, build, and a `wrangler deploy --dry-run` of both environments (`npm run verify:deploy`), then `npm run db:local` twice to prove the migrations and catalog sync apply cleanly and repeat without changes. Rulesets on both branches require `ci` to pass.
 
 ## 3. Auth
 
@@ -139,11 +140,20 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 - Exactly one category is final, and its `countPerGame` is 1.
 - Every `countPerGame` is at least 1.
 - Every category has at least `countPerGame` active tasks.
+- Structure:
+  - The file is an object with non-empty `categories` and `tasks` arrays.
+  - Unknown keys are rejected at every level, so a typo can't slip through.
+  - Required fields are non-empty strings, and `order` and `countPerGame` are integers.
+  - `order` is unique.
+  - `final` (categories) and `active` (tasks) are booleans when present.
+  - `name` and `text` are at most 200 characters, with no control characters or newlines.
+- Only tasks take `"active": false`. A category is retired by removing it from the file.
 
 **Sync**
 
-- On every deploy, a script generates SQL that upserts all categories and tasks.
+- On every deploy, `npm run catalog:sql` validates the file and generates SQL that upserts all categories and tasks. An invalid file stops the deploy before anything remote runs.
 - Any database row that's missing from the file is marked inactive. Rows are never deleted.
+- The app reads the catalog from D1 only. Neither the Worker nor the client imports the file.
 - Staging gets catalog changes first, and production gets them on promotion.
 
 ## 8. Data model (D1)
@@ -156,7 +166,15 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 - `team_tasks`: team_id, game_task_id, completed_at (null when not done). Primary key is (team_id, game_task_id).
 - `task_events`: id, game_id, team_id, game_task_id, action (`complete` or `undo`), at
 
-Deleting a game deletes all of its child rows in one batch.
+- `games`, `teams`, `game_tasks` and `task_events` use integer IDs. The game `code` is the public ID.
+- `status` is one of the §4 states. `end_reason` is `completed` or `timeout` once a game is finished, and null otherwise, including for abandoned games.
+- There is no `ON DELETE CASCADE`. Deleting a game deletes all of its child rows in one batch, in this order:
+  1. clear `games.winner_team_id`;
+  2. delete `task_events`;
+  3. delete `team_tasks`;
+  4. delete `game_tasks`;
+  5. delete `teams`;
+  6. delete the `games` row.
 
 ## 9. Screens
 

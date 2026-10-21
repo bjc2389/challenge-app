@@ -8,6 +8,8 @@
     "test": "vitest run",
     "build": "vite build",
     "verify:deploy": "wrangler deploy --dry-run --env staging --outdir dist/worker-staging && wrangler deploy --dry-run --env production --outdir dist/worker-production",
+    "catalog:sql": "node scripts/catalog-sql.mjs",
+    "db:local": "wrangler d1 migrations apply DB --local && npm run catalog:sql && wrangler d1 execute DB --local --yes --file dist/catalog.sql",
     "deploy:staging": "node scripts/deploy.mjs staging",
     "deploy:production": "node scripts/deploy.mjs production"
   },
