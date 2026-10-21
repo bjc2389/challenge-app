@@ -24,6 +24,9 @@ export default defineConfig(async () => {
     test: {
       include: ["test/**/*.test.ts"],
       setupFiles: ["./test/setup/apply-migrations.ts"],
+      // Vitest stubs .css imports to "" by default; the static-assets test reads the
+      // real stylesheet to check the reduced-motion rules.
+      css: { include: [/src\/client\/styles\.css/] },
     },
   };
 });
