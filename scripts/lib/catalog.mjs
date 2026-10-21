@@ -56,7 +56,7 @@ function checkFields(entry, path, keys, required, errors) {
       errors.push(`${at}: must be a non-empty string`);
     } else if (kind === "id" && !KEBAB_ID.test(value)) {
       errors.push(`${at}: "${value}" is not kebab-case`);
-    } else if (kind === "text" && (CONTROL_CHARS.test(value) || value.length > MAX_TEXT_LENGTH)) {
+    } else if (kind === "text" && (CONTROL_CHARS.test(value) || [...value].length > MAX_TEXT_LENGTH)) {
       errors.push(`${at}: must be at most ${MAX_TEXT_LENGTH} characters with no control characters or newlines`);
     }
   }

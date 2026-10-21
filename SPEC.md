@@ -167,7 +167,7 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 - `task_events`: id, game_id, team_id, game_task_id, action (`complete` or `undo`), at
 
 - `games`, `teams`, `game_tasks` and `task_events` use integer IDs. The game `code` is the public ID.
-- `status` is one of the §4 states. `end_reason` is `completed` or `timeout` once a game is finished, and null otherwise, including for abandoned games.
+- `status` is one of the §4 states. `end_reason` is `completed` or `timeout` once a game is finished, and null otherwise, including for abandoned games. `winner_team_id` is null unless the game is finished, and stays null on a tie. The database enforces both rules.
 - There is no `ON DELETE CASCADE`. Deleting a game deletes all of its child rows in one batch, in this order:
   1. clear `games.winner_team_id`;
   2. delete `task_events`;
