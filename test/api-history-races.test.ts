@@ -64,3 +64,31 @@ describe("§4 history detail when finalizing loses races", () => {
     expect(body.game.winnerTeamId).toBe(g.teamIds[1]);
   });
 });
+
+describe("§10 history detail answers 409 busy when every finalize loses", () => {
+  it("gives 409 busy and leaves the game unfinished, not 404", async () => {
+    // Another write bumps the version just before every timeout commit.
+    const alwaysLoses = new Proxy(env.DB, {
+      get(target, prop) {
+        if (prop === "batch") {
+          return async (statements: D1PreparedStatement[]) => {
+            if (statements.length === 1) {
+              await env.DB.prepare("UPDATE games SET version = version + 1 WHERE id = ?").bind(g.gameId).run();
+            }
+            return target.batch(statements);
+          };
+        }
+        const value = Reflect.get(target, prop);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+    const res = await testApp(ctx.deps).request(
+      historyUrl(g.code),
+      { headers: { cookie: await cookieFor("player") } },
+      { DB: alwaysLoses },
+    );
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "busy", message: expect.any(String) });
+    expect((await gameRow(g.code)).status).toBe("active");
+  });
+});
