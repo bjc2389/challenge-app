@@ -52,11 +52,13 @@ States: `setup` → `rolled` → `active` → `finished` or `abandoned`.
 **Create.** "New game" calls `POST /api/games` and returns a game code.
 
 - The code is 5 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`, regenerated if it collides with an existing code.
-- The game URL is `/g/<code>`. Others join by entering the code on the home screen.
+- The game URL is `/g/<code>`. Others join by entering the code on the home screen. Codes are case-insensitive.
+- A new game starts in `setup` with two teams named "Team 1" and "Team 2".
 
 **Setup.** Enter two team names, then "Roll the dice."
 
-- Names are 1–24 characters after trimming and must differ (ignoring case).
+- Names are 1–24 characters after trimming, with no control characters, and must differ (ignoring case).
+- Saving names identical to the current ones changes nothing.
 - Rolling picks the tasks and sets the status to `rolled`.
 
 **Rolled.** The task list is visible so teams can gather supplies. Team names can still be edited. The big Start button sets `started_at`, sets `ends_at` to start plus 60 minutes, and moves the game to `active`.
@@ -67,12 +69,12 @@ States: `setup` → `rolled` → `active` → `finished` or `abandoned`.
 
 - **Completion:** a team completes the final task. The game becomes `finished` with that team as winner, `end_reason=completed`, and `ended_at` set to the completion time.
   - This must be a conditional write (only if the game is still active), so two simultaneous finishes produce exactly one winner.
-- **Timeout:** the first request that touches the game at or after `ends_at` finalizes it. History endpoints also sweep and finalize expired games.
+- **Timeout:** the first request that touches the game at or after `ends_at` finalizes it, including a plain `GET`. History endpoints also sweep and finalize expired games (M5).
   - The team with the most completed tasks wins.
   - If tied, the team with the earlier last completion wins.
   - If still tied, the result is a tie with no winner.
   - `end_reason=timeout` and `ended_at=ends_at`.
-- **Abandon:** allowed from `setup`, `rolled` or `active`, with a confirmation. The game gets no winner and is excluded from records.
+- **Abandon:** allowed from `setup`, `rolled` or `active`, with a confirmation. `ended_at` is set to the abandon time, so history can sort it. The game gets no winner and no end reason, and is excluded from records.
 
 There is no re-rolling, and the 60-minute limit is a constant in code.
 
@@ -81,7 +83,8 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 **Rolling**
 
 - Each category's `countPerGame` sets how many tasks it contributes.
-- The roll picks that many distinct active tasks at random, using crypto randomness, category by category in order. The final category always comes last.
+- The roll picks that many distinct active tasks at random, using crypto randomness, category by category in order. The final category always comes last. Tasks within a category come in random order.
+- The catalog is read from D1 at roll time. If an active category has fewer active tasks than its `countPerGame`, the roll fails with 409 `catalog_incomplete`, naming the category, and the game stays in `setup`.
 - Task text is copied into the game when rolled, so later catalog edits never change existing games.
 - Both teams get the same list.
 
@@ -97,7 +100,9 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 - Both are allowed only while the game is active and before `ends_at`.
 - Undo requires a confirmation in the UI. The final task can't be undone, because completing it ends the game.
 - Each complete or undo also writes a `task_events` row. The state change and the event go in a single D1 batch.
-- Completing a task that's already complete returns 200 and changes nothing.
+- Completing a task that's already complete returns 200 and changes nothing. So does undoing a task that isn't complete.
+- `teamId` is the team's `id` from the game view. A team from another game returns 422; a task from another game returns 404.
+- Completing the final task while it's locked returns 409 `final_locked`. Undoing it returns 409 `final_not_undoable`.
 
 ## 6. Live updates and timer
 
@@ -211,16 +216,26 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
   - `GET /api/health`, which returns `{ok, env}`
 - **Player:**
   - `GET /api/session`, which returns `{role, exp}` for the current session
-  - `POST /api/games`
+  - `POST /api/games` (no body; returns 201)
   - `GET /api/games/:code`
   - `POST /api/games/:code/roll`
-  - `PATCH /api/games/:code/teams`
+  - `PATCH /api/games/:code/teams`, with body `{team1, team2}`
   - `POST /api/games/:code/start`
-  - `POST /api/games/:code/tasks/:id/complete`
-  - `POST /api/games/:code/tasks/:id/undo`
+  - `POST /api/games/:code/tasks/:id/complete`, with body `{teamId}`
+  - `POST /api/games/:code/tasks/:id/undo`, with body `{teamId}`
   - `POST /api/games/:code/abandon`
   - `GET /api/history`
   - `GET /api/history/:code`
+- **Game view.** Every game endpoint above returns the whole game on success:
+  ```
+  { serverNow, version,
+    game: { code, status, createdAt, rolledAt, startedAt, endsAt, endedAt, endReason, winnerTeamId, durationMs },
+    teams: [{ id, slot, name, score, finalUnlocked, lastCompletedAt }],          // 2 teams, by slot
+    tasks: [{ id, sortOrder, categoryId, categoryName, text, isFinal, completedAt: [slot 1, slot 2] }] }
+  ```
+  - Times are UTC epoch ms or null. `tasks` is empty before the roll, and `completedAt` is null while a task isn't done.
+  - `version` goes up by exactly 1 on every change. Requests that change nothing don't bump it.
+  - Finished and abandoned games still return their full state.
 - **Admin:**
   - `GET /api/admin/games`
   - `PATCH /api/admin/games/:code` (sets `isTest`)
@@ -230,7 +245,12 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
   - 401: not logged in
   - 403: wrong role
   - 404: not found
-  - 409: invalid state change
+  - 409: invalid state change. The `error` code says which:
+    - `invalid_state`: the action isn't allowed in the current status (including re-rolling);
+    - `game_over`: the game is finished, abandoned or out of time;
+    - `final_locked` and `final_not_undoable` (§5);
+    - `catalog_incomplete` (§5);
+    - `busy`: the game kept changing during the request; try again.
   - 422: validation error
   - 500: server error, including a missing secret (`{error: "internal", message: "Something went wrong"}`, never with details)
 
