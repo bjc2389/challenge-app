@@ -90,6 +90,8 @@ export function createPoller(deps: PollerDeps) {
         if (err instanceof ApiError && err.status === 401) return end("unauthorized");
         failures += 1;
         deps.onError(err, failures);
+        // A kick doesn't skip the backoff after a failure.
+        followUp = false;
         next(Math.min(intervalMs * 2 ** (failures - 1), maxBackoffMs));
       },
     );
@@ -118,7 +120,8 @@ export function createPoller(deps: PollerDeps) {
     },
     /** Poll now (or right after the request in flight). */
     kick() {
-      if (!running) return;
+      // Hidden pages don't poll; becoming visible polls straight away anyway.
+      if (!running || !visible) return;
       if (inFlight) followUp = true;
       else {
         clearTimer();

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import { ConfirmDialog } from "../components/ConfirmDialog";
 import { Link } from "../components/Link";
 import { ShareButton } from "../components/ShareButton";
-import type { GameView } from "../game/types";
+import { isOver, type GameView } from "../game/types";
 import { resultBanner, teamBySlot } from "../game/view";
 import { rememberGame } from "../lastGame";
 import { navigate } from "../router";
@@ -45,7 +45,15 @@ function LoadedGame({ code }: { code: string }) {
     };
   }, [code]);
 
-  useWakeLock(game.view?.game.status === "active");
+  const status = game.view?.game.status;
+  useWakeLock(status === "active");
+
+  // A dialog never outlives its stage: undo only applies while active, and
+  // nothing applies once the game is over.
+  useEffect(() => {
+    if (status !== "active") setConfirm((c) => (c?.kind === "undo" ? null : c));
+    if (game.view && isOver(game.view)) setConfirm(null);
+  }, [status, game.view]);
 
   if (game.missing) return <Missing />;
   if (!game.view) {
@@ -143,7 +151,9 @@ function useSaveNames(view: GameView, game: GameState) {
 
 function SetupView({ view, game, onAbandon }: ViewProps) {
   const saveNames = useSaveNames(view, game);
-  const busy = game.pending.has("names") || game.pending.has("roll");
+  const saving = game.pending.has("names");
+  const rolling = game.pending.has("roll");
+  const busy = saving || rolling;
   return (
     <main class="stack">
       <h1>New game</h1>
@@ -151,7 +161,7 @@ function SetupView({ view, game, onAbandon }: ViewProps) {
       <p>Name the two teams, then roll for this game's tasks.</p>
       <TeamNamesForm
         view={view}
-        submitLabel={busy ? "Rolling…" : "Roll the dice"}
+        submitLabel={saving ? "Saving names…" : rolling ? "Rolling…" : "Roll the dice"}
         busy={busy}
         alwaysSubmit
         onSubmit={async (names, changed) => {
@@ -251,7 +261,8 @@ function useWakeLock(active: boolean) {
     let lock: WakeLockSentinel | null = null;
     let released = false;
     const acquire = async () => {
-      if (document.visibilityState !== "visible") return;
+      // Skip if hidden, or if a lock is already held (two calls can race).
+      if (document.visibilityState !== "visible" || (lock && !lock.released)) return;
       try {
         lock = await navigator.wakeLock.request("screen");
         if (released) await lock.release();

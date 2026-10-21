@@ -1,10 +1,15 @@
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 // Shares the game link with the phone's share sheet, or copies it. If both fail,
 // shows the link selected so it can be copied by hand.
 export function ShareButton({ code }: { code: string }) {
   const [status, setStatus] = useState<string | null>(null);
   const [fallback, setFallback] = useState(false);
+  const urlInput = useRef<HTMLInputElement>(null);
+  // Select once when shown, not on every re-render (each poll re-renders).
+  useEffect(() => {
+    if (fallback) urlInput.current?.select();
+  }, [fallback]);
   const url = `${location.origin}/g/${code}`;
 
   const share = async () => {
@@ -40,7 +45,7 @@ export function ShareButton({ code }: { code: string }) {
           readOnly
           value={url}
           aria-label="Game link"
-          ref={(el) => el?.select()}
+          ref={urlInput}
         />
       )}
     </div>

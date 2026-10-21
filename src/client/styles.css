@@ -89,7 +89,11 @@ h2 {
   margin: 0;
 }
 
+/* Standalone links are touch targets too. */
 a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
   color: var(--blue);
   font-weight: 600;
 }
@@ -290,10 +294,10 @@ button.abandon {
   border-top: 3px solid var(--orange);
 }
 
+/* The orange top border is the accent; small text stays navy for contrast. */
 .board-row.final .category {
   font-family: "Anybody", system-ui, sans-serif;
   font-size: 1rem;
-  color: var(--orange);
 }
 
 .cell {
@@ -431,10 +435,13 @@ dialog.confirm::backdrop {
   font-weight: 600;
 }
 
+/* Bottom of the screen, so it never covers the countdown; a toast sits above it. */
 .reconnecting {
-  bottom: auto;
-  top: 0.5rem;
   background: var(--blue);
+}
+
+.reconnecting ~ .toast {
+  bottom: 5rem;
 }
 
 /* Very small phones: give the task text more room. */

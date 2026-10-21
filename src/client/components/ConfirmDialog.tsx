@@ -28,13 +28,16 @@ export function ConfirmDialog({ title, body, confirmLabel, cancelLabel = "Cancel
       ref={dialog}
       class="confirm"
       aria-labelledby="confirm-title"
+      aria-describedby={body ? "confirm-body" : undefined}
+      // Covers closes that skip the cancel event, like Android's back gesture.
+      onClose={onCancel}
       onCancel={(event) => {
         event.preventDefault();
         onCancel();
       }}
     >
       <h2 id="confirm-title">{title}</h2>
-      {body && <p>{body}</p>}
+      {body && <p id="confirm-body">{body}</p>}
       <div class="confirm-actions">
         <button ref={cancel} type="button" class="secondary" onClick={onCancel}>
           {cancelLabel}

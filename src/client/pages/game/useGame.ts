@@ -26,16 +26,16 @@ export function useGame(code: string) {
   const [reconnecting, setReconnecting] = useState(false);
   const [reveal, setReveal] = useState(false);
   const poller = useRef<Poller | null>(null);
-  const status = useRef<GameStatus | null>(null);
+  const prevStatus = useRef<GameStatus | null>(null);
+  const inFlight = useRef(new Set<string>());
 
-  const apply = useCallback((next: GameView) => {
-    setView((current) => {
-      const chosen = pickNewer(current, next);
-      if (shouldReveal(status.current, chosen.game.status)) setReveal(true);
-      status.current = chosen.game.status;
-      return chosen;
-    });
-  }, []);
+  const apply = useCallback((next: GameView) => setView((current) => pickNewer(current, next)), []);
+
+  const status = view?.game.status ?? null;
+  useEffect(() => {
+    if (status && shouldReveal(prevStatus.current, status)) setReveal(true);
+    prevStatus.current = status;
+  }, [status]);
 
   const addSample = useCallback((s: ClockSample) => setSample((current) => betterSample(current, s)), []);
 
@@ -96,6 +96,9 @@ export function useGame(code: string) {
   /** Sends a write. `key` marks what's pending (a cell, or a button). Returns success. */
   const act = useCallback(
     async (key: string, method: string, path: string, body?: unknown): Promise<boolean> => {
+      // A second tap on something already pending is ignored, even within one frame.
+      if (inFlight.current.has(key)) return false;
+      inFlight.current.add(key);
       setPending((s) => new Set(s).add(key));
       try {
         const res = await timed(path, { method, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -109,6 +112,7 @@ export function useGame(code: string) {
         poller.current?.kick();
         return false;
       } finally {
+        inFlight.current.delete(key);
         setPending((s) => {
           const next = new Set(s);
           next.delete(key);

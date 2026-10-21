@@ -59,5 +59,5 @@ export function resultBanner(view: GameView): { title: string; detail: string } 
   };
 }
 
-/** Animate the task list only when this phone sees the roll happen. */
+/** Animate the task list only on phones that were watching when the dice were rolled. */
 export const shouldReveal = (prev: GameStatus | null, next: GameStatus) => prev === "setup" && next === "rolled";

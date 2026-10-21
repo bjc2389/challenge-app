@@ -188,7 +188,7 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
 - **`/g/:code` (game):**
   - Every stage before the end shows the game code with a Share button (the phone's share sheet, or copy link) and Abandon (with confirmation).
   - *Setup:* two name fields and "Roll the dice."
-  - *Rolled:* the task list, editable names, a big Start button, and Abandon. On the phone that rolled, the tasks appear one by one, with the final puzzle last (no animation with reduced motion).
+  - *Rolled:* the task list, editable names, a big Start button, and Abandon. On phones that are watching when the dice are rolled, the tasks appear one by one, with the final puzzle last (no animation with reduced motion).
   - *Active:*
     - The header shows the countdown and the score (tasks done per team).
     - The body is a grid: one row per task, with a checkbox column for each team.
