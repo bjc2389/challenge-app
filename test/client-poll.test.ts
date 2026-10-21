@@ -617,3 +617,29 @@ describe("§6 poller: accept (a write response)", () => {
     expect(h.fetches()).toBe(0);
   });
 });
+
+describe("§6 poller: hidden pages and failed follow-ups (review fixes)", () => {
+  it("kick() while hidden doesn't fetch; becoming visible polls once", async () => {
+    const h = setup();
+    h.poller.start(v(5));
+    h.poller.setVisible(false);
+    h.poller.kick();
+    await h.sched.advance(60_000);
+    expect(h.fetches()).toBe(0);
+    h.poller.setVisible(true);
+    await flush();
+    expect(h.fetches()).toBe(1);
+  });
+
+  it("kick() during a request that then fails still waits out the backoff", async () => {
+    const h = setup();
+    h.poller.start(v(5));
+    await h.sched.advance(3_000);
+    expect(h.fetches()).toBe(1);
+    h.poller.kick();
+    await h.fail(new TypeError("offline"));
+    // No immediate follow-up: the next try is the 3 s backoff, not now.
+    expect(h.fetches()).toBe(1);
+    expect(h.sched.live().map((t) => t.ms)).toEqual([3_000]);
+  });
+});
