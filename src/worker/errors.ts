@@ -9,8 +9,12 @@ export function apiError(c: Context, status: ContentfulStatusCode, error: string
 // A required Worker secret is unset, empty or too weak. Only the variable name
 // is ever logged, never a value.
 export class MissingSecretError extends Error {
-  constructor(readonly secretName: string) {
-    super(`Missing or invalid secret: ${secretName}`);
+  /** `reason` says why (for example "not set"), never anything about the value itself. */
+  constructor(
+    readonly secretName: string,
+    reason: string,
+  ) {
+    super(`Missing or invalid secret: ${secretName} (${reason})`);
     this.name = "MissingSecretError";
   }
 }

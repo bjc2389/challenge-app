@@ -49,9 +49,14 @@ type AuthEnvVar = "PLAYER_PASSWORD" | "ADMIN_PASSWORD" | "SESSION_SECRET";
 
 // Reads a secret from env, treating unset, empty and too-short values as missing.
 export function requireSecret(env: Env, name: AuthEnvVar): string {
-  const value = env[name];
-  const minLength = name === "SESSION_SECRET" ? MIN_SESSION_SECRET_LENGTH : 1;
-  if (typeof value !== "string" || value.length < minLength) throw new MissingSecretError(name);
+  const value: unknown = env[name];
+  if (value === undefined) throw new MissingSecretError(name, "not set");
+  // A Secrets Store binding, for example, arrives as an object rather than text.
+  if (typeof value !== "string") throw new MissingSecretError(name, `not text: ${typeof value}`);
+  if (value === "") throw new MissingSecretError(name, "empty");
+  if (name === "SESSION_SECRET" && value.length < MIN_SESSION_SECRET_LENGTH) {
+    throw new MissingSecretError(name, `shorter than ${MIN_SESSION_SECRET_LENGTH} characters`);
+  }
   return value;
 }
 
