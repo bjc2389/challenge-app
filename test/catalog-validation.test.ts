@@ -137,8 +137,8 @@ describe("§7 validation: valid fixtures", () => {
 
   it("allows quotes, semicolons, backslashes and emoji in name and text", () => {
     const c = variant((c) => {
-      cat(c, 0).name = `Bob's "big" day; \\ 🍺`;
-      task(c, 0).text = `Bob's "big" day; DROP TABLE games; -- \\ 🍺`;
+      cat(c, 0).name = `Sam's "big" day; \\ 🍺`;
+      task(c, 0).text = `Sam's "big" day; DROP TABLE games; -- \\ 🍺`;
     });
     expect(validateCatalog(c)).toEqual([]);
   });

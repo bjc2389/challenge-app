@@ -48,7 +48,7 @@ async function tableExists(name: string): Promise<boolean> {
   return row !== null;
 }
 
-const ESCAPE_TEXT = `Bob's "big" day; DROP TABLE games; -- \\ 🍺`;
+const ESCAPE_TEXT = `Sam's "big" day; DROP TABLE games; -- \\ 🍺`;
 
 beforeEach(async () => {
   await resetDb();
@@ -285,12 +285,12 @@ describe("§7 sync: escaping", () => {
   it("round-trips quotes, a semicolon, SQL keywords, a comment marker, a backslash and emoji exactly", async () => {
     const c = real();
     for (const t of c.tasks) if (t.id === "four-loko") t.text = ESCAPE_TEXT;
-    for (const cat of c.categories) if (cat.id === "beer") cat.name = `Bob's "beer"; -- \\`;
+    for (const cat of c.categories) if (cat.id === "beer") cat.name = `Sam's "beer"; -- \\`;
     await sync(c);
 
     const { categories, tasks } = await snapshotCatalog();
     expect(taskRow(tasks, "four-loko").text).toBe(ESCAPE_TEXT);
-    expect(categoryRow(categories, "beer").name).toBe(`Bob's "beer"; -- \\`);
+    expect(categoryRow(categories, "beer").name).toBe(`Sam's "beer"; -- \\`);
     expect(tasks).toHaveLength(8);
     expect(await tableExists("games")).toBe(true);
   });

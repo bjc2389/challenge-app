@@ -312,7 +312,9 @@ describe("§8 data model: constraints on games", () => {
   });
 
   it.each(["setup", "rolled", "active", "finished", "abandoned"])("accepts status %j", async (status) => {
-    await insertGameRow({ code: "ABCDE", created_at: T0, status });
+    // A finished game needs an end_reason (0002 triggers).
+    const endReason = status === "finished" ? "completed" : null;
+    await insertGameRow({ code: "ABCDE", created_at: T0, status, end_reason: endReason });
     const row = await env.DB.prepare("SELECT status FROM games WHERE code = ?").bind("ABCDE").first();
     expect(row).toEqual({ status });
   });
@@ -325,14 +327,16 @@ describe("§8 data model: constraints on games", () => {
     await expect(insertGameRow({ code: "ABCDE", created_at: T0, status: null })).rejects.toThrow(/NOT NULL/);
   });
 
-  it.each(["completed", "timeout"])("accepts end_reason %j", async (endReason) => {
-    await insertGameRow({ code: "ABCDE", created_at: T0, end_reason: endReason });
+  it.each(["completed", "timeout"])("accepts end_reason %j on a finished game", async (endReason) => {
+    await insertGameRow({ code: "ABCDE", created_at: T0, status: "finished", end_reason: endReason });
     const row = await env.DB.prepare("SELECT end_reason FROM games WHERE code = ?").bind("ABCDE").first();
     expect(row).toEqual({ end_reason: endReason });
   });
 
   it.each(["abandoned", "forfeit", "COMPLETED", ""])("rejects end_reason %j", async (endReason) => {
-    await expect(insertGameRow({ code: "ABCDE", created_at: T0, end_reason: endReason })).rejects.toThrow(/CHECK/);
+    await expect(
+      insertGameRow({ code: "ABCDE", created_at: T0, status: "finished", end_reason: endReason }),
+    ).rejects.toThrow(/CHECK/);
   });
 
   it.each([-1, 2])("rejects is_test %j", async (isTest) => {
@@ -346,9 +350,68 @@ describe("§8 data model: constraints on games", () => {
   });
 
   it("rejects a winner_team_id that does not exist", async () => {
-    await expect(insertGameRow({ code: "ABCDE", created_at: T0, winner_team_id: 999_999 })).rejects.toThrow(
-      /FOREIGN KEY/,
+    await expect(
+      insertGameRow({ code: "ABCDE", created_at: T0, status: "finished", end_reason: "completed", winner_team_id: 999_999 }),
+    ).rejects.toThrow(/FOREIGN KEY/);
+  });
+});
+
+// §8: end_reason and winner_team_id are set only on finished games (0002 triggers).
+describe("§8 data model: end state matches status", () => {
+  const END_STATE_ERROR = /only finished games have an end_reason or winner/;
+
+  it.each(["setup", "rolled", "active", "abandoned"])("rejects an end_reason on a %s game", async (status) => {
+    await expect(insertGameRow({ code: "ABCDE", created_at: T0, status, end_reason: "completed" })).rejects.toThrow(
+      END_STATE_ERROR,
     );
+  });
+
+  it("rejects a finished game with no end_reason", async () => {
+    await expect(insertGameRow({ code: "ABCDE", created_at: T0, status: "finished" })).rejects.toThrow(END_STATE_ERROR);
+  });
+
+  it("accepts a finished tie: end_reason timeout with no winner", async () => {
+    await insertGameRow({ code: "ABCDE", created_at: T0, status: "finished", end_reason: "timeout" });
+    const row = await env.DB.prepare("SELECT winner_team_id FROM games WHERE code = ?").bind("ABCDE").first();
+    expect(row).toEqual({ winner_team_id: null });
+  });
+
+  it("accepts an abandoned game with no end_reason or winner", async () => {
+    await insertGameRow({ code: "ABCDE", created_at: T0, status: "abandoned" });
+    const row = await env.DB.prepare("SELECT end_reason, winner_team_id FROM games WHERE code = ?").bind("ABCDE").first();
+    expect(row).toEqual({ end_reason: null, winner_team_id: null });
+  });
+
+  it("rejects setting a winner on an active game", async () => {
+    await seedMiniCatalog();
+    const { gameId, teamIds } = await seedFullGame("ABCDE");
+    await env.DB.prepare("UPDATE games SET status = 'active', end_reason = NULL, winner_team_id = NULL WHERE id = ?")
+      .bind(gameId)
+      .run();
+    await expect(
+      env.DB.prepare("UPDATE games SET winner_team_id = ? WHERE id = ?").bind(teamIds[0], gameId).run(),
+    ).rejects.toThrow(END_STATE_ERROR);
+  });
+
+  it("rejects moving a finished game back to active without clearing its end state", async () => {
+    await seedMiniCatalog();
+    const { gameId } = await seedFullGame("ABCDE");
+    await expect(env.DB.prepare("UPDATE games SET status = 'active' WHERE id = ?").bind(gameId).run()).rejects.toThrow(
+      END_STATE_ERROR,
+    );
+  });
+
+  it("allows finishing a game in one update", async () => {
+    await seedMiniCatalog();
+    const { gameId, teamIds } = await seedFullGame("ABCDE");
+    await env.DB.prepare("UPDATE games SET status = 'active', end_reason = NULL, winner_team_id = NULL WHERE id = ?")
+      .bind(gameId)
+      .run();
+    await env.DB.prepare("UPDATE games SET status = 'finished', end_reason = 'completed', winner_team_id = ? WHERE id = ?")
+      .bind(teamIds[1], gameId)
+      .run();
+    const row = await env.DB.prepare("SELECT status, end_reason, winner_team_id FROM games WHERE id = ?").bind(gameId).first();
+    expect(row).toEqual({ status: "finished", end_reason: "completed", winner_team_id: teamIds[1] });
   });
 });
 
