@@ -12,18 +12,36 @@
   },
   "observability": { "enabled": true },
   "vars": { "APP_ENV": "local" },
+  // Local dev and tests only. Bindings aren't inherited, so each env sets its own.
+  "d1_databases": [{ "binding": "DB", "database_name": "challenge-app-local-db", "migrations_dir": "migrations" }],
   "env": {
     "staging": {
       "name": "challenge-app-staging",
       "workers_dev": true,
       "preview_urls": false,
-      "vars": { "APP_ENV": "staging" }
+      "vars": { "APP_ENV": "staging" },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "challenge-app-staging-db",
+          "database_id": "a44e675e-2103-416e-a58b-a54c2a86078e",
+          "migrations_dir": "migrations"
+        }
+      ]
     },
     "production": {
       "name": "challenge-app-production",
       "workers_dev": true,
       "preview_urls": false,
-      "vars": { "APP_ENV": "production" }
+      "vars": { "APP_ENV": "production" },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "challenge-app-production-db",
+          "database_id": "ea307060-24a9-441f-a89e-9130ec1268fe",
+          "migrations_dir": "migrations"
+        }
+      ]
     }
   }
 }
