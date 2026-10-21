@@ -206,7 +206,7 @@ There is no re-rolling, and the 60-minute limit is a constant in code.
   Records cover every game, not just the 25 listed. Ties go to whoever set the time first. Records exclude abandoned games. Test games are hidden entirely.
 - **`/history/:code`:** teams, result, end reason, duration, each team's split time per task (minutes:seconds from start; undone tasks show "—"), the winner's puzzle time, and the full event log including undos. Games in progress and test games show "not found".
 - Times on history screens are shown as `m:ss`.
-- Unknown paths show a not-found page. An unexpected error shows "Something went wrong" with Reload and Home, never a blank screen.
+- Unknown paths show a not-found page. An unexpected error while showing a page shows "Something went wrong" with Reload and Home, never a blank screen.
 - **`/admin`:**
   - Admin login.
   - A games table showing every game, test and in-progress games included, newest created first: code (linking to the game), created date, status, teams, result and test flag. Each game can be marked or unmarked as a test, or deleted (with confirmation; this is a permanent delete). Deleting a game in progress is allowed, and the confirmation warns that anyone playing it will lose it.

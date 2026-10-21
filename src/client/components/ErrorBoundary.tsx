@@ -1,5 +1,4 @@
 import { Component, type ComponentChildren } from "preact";
-import { Link } from "./Link";
 
 type Props = { path: string; children: ComponentChildren };
 type State = { failed: boolean; path: string };
@@ -26,7 +25,8 @@ export class ErrorBoundary extends Component<Props, State> {
         <button type="button" onClick={() => location.reload()}>
           Reload
         </button>
-        <Link href="/">Home</Link>
+        {/* A full page load, so it also recovers when the home page itself failed. */}
+        <a href="/">Home</a>
       </main>
     );
   }
