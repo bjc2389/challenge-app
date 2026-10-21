@@ -328,48 +328,44 @@ button.abandon {
   cursor: default;
 }
 
-.cell[aria-busy="true"] {
-  animation: pulse 0.8s ease-in-out infinite alternate;
-}
-
-@keyframes pulse {
-  to {
-    opacity: 0.45;
-  }
-}
-
-/* Roll reveal: rows arrive one by one, the final puzzle last. */
-.board.reveal .board-row:not(.board-head) {
-  animation: reveal 0.35s ease-out both;
-  animation-delay: calc(var(--i) * 90ms);
-}
-
-.board.reveal .board-row.final {
-  animation-name: reveal-final;
-  animation-duration: 0.5s;
-}
-
-@keyframes reveal {
-  from {
-    opacity: 0;
-    transform: translateY(0.5rem);
-  }
-}
-
-@keyframes reveal-final {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  70% {
-    transform: scale(1.03);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .board.reveal .board-row,
+/* Motion only for people who haven't asked for less (SPEC.md §9). */
+@media (prefers-reduced-motion: no-preference) {
   .cell[aria-busy="true"] {
-    animation: none;
+    animation: pulse 0.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes pulse {
+    to {
+      opacity: 0.45;
+    }
+  }
+
+  /* Roll reveal: rows arrive one by one, the final puzzle last. */
+  .board.reveal .board-row:not(.board-head) {
+    animation: reveal 0.35s ease-out both;
+    animation-delay: calc(var(--i) * 90ms);
+  }
+
+  .board.reveal .board-row.final {
+    animation-name: reveal-final;
+    animation-duration: 0.5s;
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(0.5rem);
+    }
+  }
+
+  @keyframes reveal-final {
+    from {
+      opacity: 0;
+      transform: scale(0.92);
+    }
+    70% {
+      transform: scale(1.03);
+    }
   }
 }
 
@@ -683,5 +679,5 @@ a.admin-code {
 }
 
 .inactive {
-  opacity: 0.6;
+  opacity: 0.7;
 }

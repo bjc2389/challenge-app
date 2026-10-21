@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { Admin } from "./pages/Admin";
 import { Game } from "./pages/Game";
 import { History } from "./pages/History";
@@ -9,7 +10,16 @@ import { matchRoute } from "./routes";
 import { usePath } from "./router";
 
 export function App() {
-  const route = matchRoute(usePath());
+  const path = usePath();
+  return (
+    <ErrorBoundary path={path}>
+      <Page path={path} />
+    </ErrorBoundary>
+  );
+}
+
+function Page({ path }: { path: string }) {
+  const route = matchRoute(path);
   switch (route.name) {
     case "home":
       return <Home />;

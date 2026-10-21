@@ -1,6 +1,15 @@
 // Any fixed origin works here: it only lets the URL parser resolve the path.
 const BASE = "http://app.invalid";
 
+/**
+ * Where a 401 sends the user: the login page, coming back here afterwards. Null on
+ * the pages that handle their own login, so they never redirect to themselves.
+ */
+export function loginRedirectPath(pathname: string, search: string): string | null {
+  if (pathname === "/login" || pathname === "/admin") return null;
+  return `/login?next=${encodeURIComponent(pathname + search)}`;
+}
+
 // Where to go after logging in. Only same-origin paths are allowed, so a crafted
 // ?next= link can't send someone to another site. Parsing (rather than only
 // checking the string) catches inputs the browser would rewrite, such as a tab

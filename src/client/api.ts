@@ -1,4 +1,5 @@
 import { ApiError } from "./apiError";
+import { loginRedirectPath } from "./nav";
 import { navigate } from "./router";
 
 export { ApiError };
@@ -14,8 +15,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit, { redirectOn
   if (res.ok) return (await res.json()) as T;
 
   const body = (await res.json().catch(() => null)) as { error?: string; message?: string } | null;
-  if (res.status === 401 && redirectOn401) {
-    navigate(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
-  }
+  const login = res.status === 401 && redirectOn401 ? loginRedirectPath(location.pathname, location.search) : null;
+  // Replace, so Back from the login page doesn't return to a page that bounces again.
+  if (login) navigate(login, { replace: true });
   throw new ApiError(res.status, body?.error ?? "unknown", body?.message ?? `HTTP ${res.status}`);
 }
